@@ -11,6 +11,12 @@
 #define GREEN		SDL_Color{ 0, 255, 0, 255 }
 #define BLUE		SDL_Color{ 0, 0, 255, 255 }
 
+#define Bg1		SDL_Color{ 51, 153, 255, 255 }
+#define Bg2		SDL_Color{ 102, 178, 255, 255 }
+
+#define Bg3		SDL_Color{ 204, 229, 255, 255 }
+#define Bg4		SDL_Color{ 153, 204, 255, 255 }
+
 namespace gpu
 {
 	struct Vertex

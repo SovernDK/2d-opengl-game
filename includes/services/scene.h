@@ -6,7 +6,7 @@
 class IScene
 {
 private:
-	std::string m_name = "";
+	std::string m_name;
 	bool started = false;
 public:
 	IScene(std::string name)
@@ -20,6 +20,7 @@ public:
 	virtual void start(core::IContext* ctx) { started = true; }
 	virtual void update(core::IContext* ctx, float dt) { if (started) return; }
 	virtual void draw(core::IContext* ctx) { if (started) return; }
+	virtual void unload(core::IContext* ctx) { started = false; }
 	virtual void quit(core::IContext* ctx) { started = false; }
 
 	std::string name() const { return m_name; };

@@ -1,4 +1,18 @@
 {
+    "language": "en",
+    "video": {
+        "windowWidth": 1920,
+        "windowHeight": 1080,
+        "internalWidth": 1920,
+        "internalHeight": 1080
+    },
+
+    "audio": {
+        "audioDeviceId": 0,
+        "sfxVolume": 1,
+        "musicVolume": 1
+    },
+
     "inputs": {
         "accept": [
             {

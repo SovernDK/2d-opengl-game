@@ -57,18 +57,6 @@ add_custom_command(TARGET Renderer POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/logs
     $<TARGET_FILE_DIR:Renderer>/logs
-
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${CMAKE_SOURCE_DIR}/config.json
-    $<TARGET_FILE_DIR:Renderer>/config.json
-
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${CMAKE_SOURCE_DIR}/style.json
-    $<TARGET_FILE_DIR:Renderer>/style.json
-
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${CMAKE_SOURCE_DIR}/settings.json
-    $<TARGET_FILE_DIR:Renderer>/settings.json
 )
 
 target_include_directories(Renderer PRIVATE

@@ -1,41 +1,43 @@
 #pragma once
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+
 #include "graphics/material.h"
+#include "core/time/timer.h"
+#include "utility/gradient.h"
+#include "utility/feel.h"
+
 #include "resources.h"
+#include <config.h>
 
-#include <string>
+using Depth = int;
 
-// Cannot use smart pointers in components because they are not trivially copyable and will break the ECS system
 namespace ecs
 {
-    struct Layer
-    {
-        uint8_t value;
-    };
-
     struct Transform
     {
-        glm::vec3 position  = glm::vec3(0);
-        glm::vec3 rotation  = glm::vec3(0);
-        glm::vec3 scale     = glm::vec3(1);
+        glm::vec3 position  = glm::vec3(0.0f);
+        glm::vec3 rotation  = glm::vec3(0.0f);
+        glm::vec3 scale     = glm::vec3(1.0f);
     };
 
     struct Transform2D
     {
-        glm::vec3 position  = glm::vec3(0);
-        glm::vec2 scale     = glm::vec2(1);
+        glm::vec2 position  = glm::vec2(0.0f);
+        glm::vec2 scale     = glm::vec2(1.0f);
         float rotation      = 0.0f;
 
         glm::mat4 model(glm::vec2 size) const
         {
+            glm::vec3 pos = glm::vec3(position, 1.0f);
+
             float scaledSizeX = scale.x * size.x;
             float scaledSizeY = scale.y * size.y;
 
             glm::mat4 model = glm::mat4(1.0f);
 
             // translate
-            model = glm::translate(model, position);
+            model = glm::translate(model, pos);
 
             //rotate around center
 			model = glm::translate(model, glm::vec3(0.5f * scaledSizeX, 0.5f * scaledSizeY, 0.0f));
@@ -47,29 +49,63 @@ namespace ecs
 
             return model;
         }
-
         glm::mat4 model(float w, float h) const
         {
             return model(glm::vec2(w, h));
-        }
-
-        Layer getLayer() const
-        {
-            return Layer{ static_cast<uint8_t>(glm::clamp(position.z, 0.0f, 255.0f)) };
         }
     };
 
     struct Sprite
     {
-        TexID textureId{ 0 };
+		TexID texture{ 0 };
+		BlendMode blend = BlendMode::None;
 
-		gpu::UVRect uv;
+		gpu::UVRect uv{};
 		glm::vec2 size = glm::vec2(32);
-        glm::vec4 color = glm::vec4(1.0f);
-        //To int
-        float depth = 1.0f;
+		SDL_Color color = WHITE;
+        Depth depth = 1;
 
-		MaterialInstance material = MaterialInstance(Resources::sharedMat("def"));
+		MaterialInstance material = MaterialInstance(Resources::sharedMat(core::GConfig.defaultShader));
+	};
+
+    struct Particle
+    {
+		Timer lifeTime{ 1.0f };
+		glm::vec2 velocity{ 0.0f };
+		glm::vec2 scale{ 1.0f };
+		uint8_t alpha = 255;
+		SDL_Color color = WHITE;
+
+		feel::ICurve* velCurve = nullptr;
+		feel::ICurve* scaleCurve = nullptr;
+		feel::ICurve* alphaCurve = nullptr;
+		feel::ICurve* colCurve = nullptr;
+	};
+
+    struct ParticleEmitter
+    {
+		Timer emiting{ 0.0f };
+		Timer interval{ 0.0f };
+
+		TexID texture{ 0 };
+
+		glm::vec4 emitArea{ 0.0f, 0.0f, 100.0f, 200.0f };
+
+		// Starting
+		glm::vec2 size = glm::vec2(64.0f);
+		glm::vec2 lifeRange{ 1.0f };
+		glm::vec2 startVelocity{ 1.0f };
+		glm::vec2 startScale{ 1.0f };
+		uint8_t startAlpha = 255;
+		SDL_Color startColor = WHITE;
+		glm::vec2 direction{ 1.0f };
+
+		// Velocity
+		std::unique_ptr<feel::ICurve> velCurve = std::make_unique<feel::QuadCurve>();
+		// Scale
+		std::unique_ptr<feel::ICurve> scaleCurve = std::make_unique<feel::QuadCurve>();
+		// Alpha
+		std::unique_ptr<feel::ICurve> alphaCurve = std::make_unique<feel::QuadCurve>();
 	};
 
     struct MapGenSettings
@@ -115,4 +151,9 @@ namespace ecs
 		float waterLevel = 0.36f;
 		float waterSpecSpread = 64.0f;
     };
+
+	struct WorldMap
+	{
+
+	};
 }

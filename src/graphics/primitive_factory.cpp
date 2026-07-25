@@ -88,6 +88,27 @@ Primitive PrimitiveFactory::createRect(glm::vec2 origin, glm::vec2 size)
 
     return { verts, indices };
 }
+
+Primitive PrimitiveFactory::createRect(glm::vec4 rect)
+{
+	float x = rect.x;
+	float y = rect.y;
+	float w = rect.z;
+	float h = rect.w;
+
+	vector<Vertex> verts = {
+		{ { x,     y,       0.0f }, {0.0f, 1.0f} }, // top-left
+		{ { x + w, y,       0.0f }, {1.0f, 1.0f} }, // top-right
+		{ { x + w, y + h,   0.0f }, {1.0f, 0.0f} }, // bottom-right
+		{ { x,     y + h,   0.0f }, {0.0f, 0.0f} }, // bottom-left
+	};
+
+	vector<GLuint> indices = {
+		0, 1, 2, 3
+	};
+
+	return { verts, indices };
+}
 #pragma endregion
 
 Primitive PrimitiveFactory::createPoly(std::vector<glm::vec2> points)

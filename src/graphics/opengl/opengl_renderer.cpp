@@ -7,6 +7,7 @@
 
 #include <graphics/primitive_factory.h>
 #include <resources.h>
+#include "utility/utils.h"
 
 OpenGlRenderer::~OpenGlRenderer()
 {
@@ -234,7 +235,7 @@ void OpenGlRenderer::renderText(ICamera& camera, RenderCommand cmd)
 
 	buffer.startDraw();
 	
-	auto* font = Resources::font("Magda-Ld4");
+	auto* font = Resources::font(data.font.data())->size(data.fontSize);
 
 	for (auto c = data.text.begin(); c != data.text.end(); c++)
 	{

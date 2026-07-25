@@ -23,7 +23,7 @@ public:
 		if (!freeIds.empty())
 		{
 			auto it = freeIds.begin();
-			T id = *it;
+			id = *it;
 			freeIds.erase(it);
 		}
 		else id = nextId++;

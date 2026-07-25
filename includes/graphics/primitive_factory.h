@@ -20,6 +20,7 @@ public:
 
     static Primitive createRect();
     static Primitive createRect(glm::vec2 origin, glm::vec2 size);
+    static Primitive createRect(glm::vec4 rect);
 	static Primitive createPoly(std::vector<glm::vec2> points);
 
 	static Primitive clipSpaceQuad();

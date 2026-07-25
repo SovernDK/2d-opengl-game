@@ -138,6 +138,16 @@ Texture2D* Resources::texture(TexID id)
 	return textures[defaultTexture].get();
 }
 
+bool Resources::textureExist(const std::string& name)
+{
+	return textures.contains(name);
+}
+
+void Resources::releaseTexture(const std::string& name)
+{
+	textures.erase(name);
+}
+
 bool Resources::loadTTFont(const fs::path path, int fontSize)
 {
     string fontName = file_util::getNameFromPath(path);
@@ -184,6 +194,8 @@ bool Resources::loadTTFont(const fs::path path, int fontSize)
     int atlasHeight = 0;
 	float padding = 1.0f; // Padding between glyphs in the atlas
 
+	fonts[fontName].addSize(fontSize);
+
     for (unsigned char c = 0; c < 128; c++)
     {
 		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
@@ -199,7 +211,7 @@ bool Resources::loadTTFont(const fs::path path, int fontSize)
 		glm::vec2 bearing = glm::vec2(glyph->bitmap_left, glyph->bitmap_top);
 		int advance = glyph->advance.x;
 
-		fonts[fontName].glyphs[c] = Glyph(glyphSize, bearing, advance);
+		fonts[fontName].size(fontSize)->glyphs[c] = Glyph(glyphSize, bearing, advance);
 
 		atlasWidth += bmp.width + padding;
 		atlasHeight = std::max(atlasHeight, (int)bmp.rows);
@@ -227,10 +239,10 @@ bool Resources::loadTTFont(const fs::path path, int fontSize)
 		// Add some debug tool to test different fontSizes and see how the UVs are calculated
 		// Reduce by half-pixel to avoid bleeding into neighboring glyphs
         float offset = 0.5f;
-		fonts[fontName].glyphs[c].uvs.u0 = (float)(xOffset - offset) / (float)atlasWidth;
-		fonts[fontName].glyphs[c].uvs.u1 = (float)(xOffset + bmp.width + offset) / (float)atlasWidth;
-        fonts[fontName].glyphs[c].uvs.v0 = 0.0f;
-		fonts[fontName].glyphs[c].uvs.v1 = (float)(bmp.rows) / (float)atlasHeight;
+		fonts[fontName].size(fontSize)->glyphs[c].uvs.u0 = (float)(xOffset - offset) / (float)atlasWidth;
+		fonts[fontName].size(fontSize)->glyphs[c].uvs.u1 = (float)(xOffset + bmp.width + offset) / (float)atlasWidth;
+		fonts[fontName].size(fontSize)->glyphs[c].uvs.v0 = 0.0f;
+		fonts[fontName].size(fontSize)->glyphs[c].uvs.v1 = (float)(bmp.rows) / (float)atlasHeight;
 
 		xOffset += bmp.width + padding;
 	}
@@ -244,7 +256,7 @@ bool Resources::loadTTFont(const fs::path path, int fontSize)
 
     auto atlasTextureName = fontName + "_" + std::to_string(fontSize);
 
-	fonts[fontName].atlas.push_back({ fontSize, glyphTexture.id });
+	fonts[fontName].size(fontSize)->atlas = glyphTexture.id;
 	saveTexture(std::move(glyphTexture), atlasTextureName);
 
     ServiceLocator::get<ILogger>()->log(CategoryLevel::TTFFont, std::format("Font {} size: {} loaded succesfully", fontName, fontSize).c_str());

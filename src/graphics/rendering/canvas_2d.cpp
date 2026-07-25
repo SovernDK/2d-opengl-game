@@ -19,7 +19,7 @@ mem::Arena* Canvas2D::arena;
 glm::vec4 Canvas2D::m_clip		= glm::vec4(0.0f);
 bool Canvas2D::isClipping		= false;
 SDL_Color Canvas2D::m_color		= { 255,255,255,255 };
-float Canvas2D::m_depth			= 1.0f;
+Depth Canvas2D::m_depth			= 1.0f;
 BlendMode Canvas2D::m_blendMode = BlendMode::None;
 
 #pragma region Public functions
@@ -48,7 +48,7 @@ void Canvas2D::resize(int width, int height)
 }
 
 #pragma region Draw Primitives
-void Canvas2D::drawLine(glm::vec2 pointA, glm::vec2 pointB, SDL_Color color, float lineWidth)
+void Canvas2D::drawLine(glm::vec2 pointA, glm::vec2 pointB, float lineWidth)
 {
 	Primitive prim = PrimitiveFactory::createLine(pointA, pointB);
 	Mesh* mesh = loadToArena<Mesh>();
@@ -57,7 +57,16 @@ void Canvas2D::drawLine(glm::vec2 pointA, glm::vec2 pointB, SDL_Color color, flo
 	drawPrimitive(CommandType::Line, mesh, lineWidth);
 }
 
-void Canvas2D::drawRect(glm::vec2 origin, glm::vec2 size, SDL_Color color, float lineWidth)
+void Canvas2D::drawWireRect(glm::vec4 rect, float lineWidth)
+{
+	Primitive prim = PrimitiveFactory::createRect(rect);
+	Mesh* mesh = loadToArena<Mesh>();
+	mesh->setVerticies(prim.vertices, prim.indices);
+
+	drawPrimitive(CommandType::Rect, mesh, lineWidth);
+}
+
+void Canvas2D::drawWireRect(glm::vec2 origin, glm::vec2 size, float lineWidth)
 {
 	Primitive prim = PrimitiveFactory::createRect(origin, size);
 	Mesh* mesh = loadToArena<Mesh>();
@@ -66,16 +75,7 @@ void Canvas2D::drawRect(glm::vec2 origin, glm::vec2 size, SDL_Color color, float
 	drawPrimitive(CommandType::Rect, mesh, lineWidth);
 }
 
-void Canvas2D::drawWireRect(glm::vec2 origin, glm::vec2 size, SDL_Color color, float lineWidth)
-{
-	Primitive prim = PrimitiveFactory::createRect(origin, size);
-	Mesh* mesh = loadToArena<Mesh>();
-	mesh->setVerticies(prim.vertices, prim.indices);
-
-	drawPrimitive(CommandType::Rect, mesh, lineWidth);
-}
-
-void Canvas2D::drawWirePoly(std::vector<glm::vec2> points, SDL_Color color, float lineWidth)
+void Canvas2D::drawWirePoly(std::vector<glm::vec2> points, float lineWidth)
 {
 	Primitive prim = PrimitiveFactory::createPoly(points);
 	Mesh* mesh = loadToArena<Mesh>();
@@ -92,6 +92,14 @@ void Canvas2D::drawSprite(ecs::Sprite& sprite, ecs::Transform2D& transform)
 	mesh->setVerticies(prim.vertices, prim.indices);
 
 	glm::mat4 model = transform.model(glm::vec2(sprite.size));
+
+	if (sprite.blend != BlendMode::None)
+		sprite.material.blendMode = sprite.blend;
+	if (sprite.texture.id != 0)
+		sprite.material.setTexture("image", sprite.texture.id);
+
+	sprite.material.setProperty("useTexture", sprite.texture.id != 0);
+	sprite.material.setProperty("mainColor", color::SDLColorToVec4(sprite.color));
 	sprite.material.setProperty("model", model);
 	sprite.material.setProperty("time", core::Profiler::instance().getElapsedTime());
 
@@ -100,14 +108,21 @@ void Canvas2D::drawSprite(ecs::Sprite& sprite, ecs::Transform2D& transform)
 
 void Canvas2D::drawImage(const TexID& texture, glm::vec4 rect, gpu::UVRect& uv)
 {
-	Primitive prim = PrimitiveFactory::createQuad(rect, uv);
+	Primitive prim = PrimitiveFactory::createQuad(uv);
 	Mesh* mesh = loadToArena<Mesh>();
 	mesh->setVerticies(prim.vertices, prim.indices);
 
-	MaterialInstance* material = loadToArena<MaterialInstance>(Resources::sharedMat("def"));
+	MaterialInstance* material = loadToArena<MaterialInstance>(Resources::sharedMat(core::GConfig.defaultShader));
 	material->blendMode = m_blendMode;
-
 	material->setProperty("mainColor", color::SDLColorToVec4(m_color));
+	material->setProperty("useTexture", texture.id != 0);
+	material->setTexture("image", texture);
+
+	ecs::Transform2D transform{ .position = glm::vec3(rect.x, rect.y, 0.0f) };
+	glm::mat4 model = transform.model(glm::vec2(rect.z, rect.w));
+	material->setProperty("model", model);
+
+	material->setProperty("time", core::Profiler::instance().getElapsedTime());
 
 	drawMeshWithMaterial(mesh, material);
 }
@@ -125,17 +140,18 @@ void Canvas2D::drawQuad(const glm::vec4& rect, MaterialInstance* const mat)
 	drawMeshWithMaterial(mesh, mat);
 }
 
-void Canvas2D::drawText(const std::string& text, ecs::Transform2D& transform, const std::string& fontName, int fontSize, SDL_Color color)
+void Canvas2D::drawText(const std::string_view text, ecs::Transform2D& transform, const std::string_view fontName, int fontSize)
 {
-	MaterialInstance* material = loadToArena<MaterialInstance>(Resources::sharedMat("ttf"));
+	MaterialInstance* material = loadToArena<MaterialInstance>(Resources::sharedMat(core::GConfig.fontShader));
 	material->blendMode = BlendMode::Alpha;
-	auto* font = Resources::font(fontName);
+	auto* font = Resources::font(fontName.data());
 
-	if (font->texture(fontSize).id == 0)
-		Resources::loadTTFont(core::GConfig.fontDir(fontName), fontSize);
+	if (font->atlas(fontSize).id == 0)
+		Resources::loadTTFont(core::GConfig.fontDir(fontName.data()), fontSize);
+	auto* rfont = font->size(fontSize);
 
-	material->setTexture("image", font->texture(fontSize).id);
-	material->setProperty("mainColor", color::SDLColorToVec4(color));
+	material->setTexture("image", font->size(fontSize)->atlas);
+	material->setProperty("mainColor", color::SDLColorToVec4(m_color));
 
 	renderer->commandBuffer->submit(RenderCommand{
 		.type = CommandType::Text,
@@ -145,21 +161,25 @@ void Canvas2D::drawText(const std::string& text, ecs::Transform2D& transform, co
 		.clip = m_clip,
 		.rdata = TextData {
 			.text = text,
-			.fontSize = 14,
+			.font = fontName,
+			.fontSize = fontSize,
 			.origin = transform.position
 		},
 	});
 }
 
-glm::vec2 Canvas2D::textSize(const std::string& text, const std::string& fontName, int fontSize)
+glm::vec2 Canvas2D::textSize(const std::string_view text, const std::string_view fontName, int fontSize)
 {
 	auto l_fontName = fontName;
 	if (l_fontName.empty())
 		l_fontName = core::GConfig.defaultFontName;
-	std::string path = core::GConfig.fontDir(l_fontName).string();
-	auto* font = Resources::font(l_fontName);
-	if (font->texture(fontSize).id == 0)
+	std::string path = core::GConfig.fontDir(l_fontName.data()).string();
+	auto* font = Resources::font(l_fontName.data());
+
+	if (font->atlas(fontSize).id == 0)
 		Resources::loadTTFont(path, fontSize);
+
+	auto* rfont = Resources::font(l_fontName.data())->size(fontSize);
 
 	glm::vec2 textSize = glm::vec2(0);
 	int upperHeight = 0;
@@ -167,7 +187,7 @@ glm::vec2 Canvas2D::textSize(const std::string& text, const std::string& fontNam
 
 	for (auto c = text.begin(); c != text.end(); c++)
 	{
-		Glyph ch = font->glyphs[*c];
+		Glyph ch = rfont->glyphs[*c];
 		
 		int advance = ch.advance;
 		textSize.x += (advance >> 6);
@@ -177,16 +197,19 @@ glm::vec2 Canvas2D::textSize(const std::string& text, const std::string& fontNam
 	return textSize;
 }
 
-glm::vec2 Canvas2D::textOrigin(const std::string& text, const std::string& fontName, int fontSize)
+glm::vec2 Canvas2D::textOrigin(const std::string_view text, const std::string_view fontName, int fontSize)
 {
 	auto l_fontName = fontName;
 	if (l_fontName.empty())
 		l_fontName = core::GConfig.defaultFontName;
 
-	std::string path = core::GConfig.fontDir(l_fontName).string();
-	auto* font = Resources::font(l_fontName);
-	if (font->texture(fontSize).id == 0)
+	std::string path = core::GConfig.fontDir(l_fontName.data()).string();
+	auto* font = Resources::font(l_fontName.data());
+
+	if (font->atlas(fontSize).id == 0)
 		Resources::loadTTFont(path, fontSize);
+
+	auto* rfont = Resources::font(l_fontName.data())->size(fontSize);
 
 	glm::vec2 origin = glm::vec2(0);
 	int upperHeight = 0;
@@ -194,7 +217,7 @@ glm::vec2 Canvas2D::textOrigin(const std::string& text, const std::string& fontN
 	
 	for (auto c = text.begin(); c != text.end(); c++)
 	{
-		Glyph ch = font->glyphs[*c];
+		Glyph ch = rfont->glyphs[*c];
 		int advance = ch.advance;
 		origin.x += (advance >> 6);
 		upperHeight = (ch.bearing.y > upperHeight) ? ch.bearing.y : upperHeight;

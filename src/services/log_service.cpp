@@ -77,7 +77,7 @@ void LoggerService::quit()
     std::string time = std::format("{:%d_%m_%Y_%H_%M}", local);
     std::string fileName = time + "_session.txt";
 
-    std::ofstream logFile(file_util::createPath(core::GConfig.getLogPath(), fileName));
+    std::ofstream logFile(file_util::createPath(core::GConfig.logPath(), fileName));
     logFile << "TIME    LEVEL   CATEGORY    MSG     COUNT" << "\n";
     while (!sessionLogs.empty())
     {

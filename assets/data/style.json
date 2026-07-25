@@ -1,0 +1,146 @@
+{
+    "root": {},
+
+    "def_window": {
+        "childrenOrigin": "center",
+        "verticalLayout": {
+            "expand": "both",
+            "fit": true,
+            "margin": {
+                "left": 6,
+                "top": 6,
+                "right": 6,
+                "bottom": 6
+            },
+            "spacing": 10
+        },
+
+        "background": {
+            "color": "#F5B027",
+            "hoverColor": "#F5B027"
+        }
+    },
+
+    "def_button": {
+        "background": {
+            "color": "#FDC354",
+            "hoverColor": "#ffffff"
+        },
+
+        "text": {
+            "font": "default",
+            "size": 64,
+            "color": "#ffffff",
+            "hoverColor": "#ff0000"
+        },
+
+        "dropShadow": true,
+        "shadowOffset": {
+            "x": 2,
+            "y": 2
+        }
+    },
+
+    "def_image": {
+        "alpha": 0
+    },
+
+    "def_text": {
+        "text": {
+            "font": "Canterbury",
+            "size": 32,
+            "overflow": "shrink",
+            "color": "#000000",
+            "hoverColor": "#ff0000",
+            "align": "middle"
+        }
+    },
+
+    "mm_window": {
+        "childrenOrigin": "center",
+        "verticalLayout": {
+            "expand": "both",
+            "fit": true,
+            "margin": {
+                "left": 6,
+                "top": 6,
+                "right": 6,
+                "bottom": 6
+            },
+            "spacing": 10
+        },
+
+        "background": {
+            "color": "#000000",
+            "hoverColor": "#000000"
+        }
+    },
+
+    "mm_button": {
+        "background": {
+            "color": "#000000",
+            "hoverColor": "#ffffff"
+        },
+
+        "text": {
+            "font": "Canterbury",
+            "size": 48,
+            "color": "#000000",
+            "hoverColor": "#ffffff",
+            "align": "middle"
+        }
+    },
+
+    "book_window": {
+        "childrenOrigin": "center",
+        "horizontalLayout": {
+            "expand": "both",
+            "fit": true,
+            "margin": {
+                "left": 6,
+                "top": 0,
+                "right": 6,
+                "bottom": 0
+            },
+            "spacing": 46
+        }
+    },
+
+    "page_window": {
+        "childrenOrigin": "center",
+        "verticalLayout": {
+            "expand": "both",
+            "fit": true,
+            "margin": {
+                "left": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0
+            },
+            "spacing": 16
+        }
+    },
+
+    "page_header": {
+        "background": {
+            "keepAspectRatio": true,
+            "color": "#ff0000",
+            "hoverColor": "#ff0000"
+        }
+    },
+
+    "choice_button": {
+        "background": {
+            "color": "#ffffff",
+            "hoverColor": "#ffffff"
+        },
+
+        "text": {
+            "font": "Canterbury",
+            "size": 32,
+            "color": "#000000",
+            "hoverColor": "#ff0000",
+            "align": "middle"
+        }
+    }
+}

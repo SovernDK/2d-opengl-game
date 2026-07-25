@@ -13,7 +13,7 @@ void main()
     vec4 texColor = vec4(1.0);
 
     if (useTexture)
-        texColor = texture(image, TexCoords);
+        texColor = texture(image, TexCoords) * mainColor;
     else 
         texColor = mainColor;
 

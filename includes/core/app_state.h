@@ -17,8 +17,8 @@ namespace core
         int width = 1920;
         int height = 1080;
 
-        int viewportWidth = 1920;
-        int viewportHeight = 1080;
+        int internalWidth = 1920;
+        int internalHeight = 1080;
 
         SDL_GLContext glContext = nullptr;
         std::shared_ptr<IRenderer> activeRenderer = nullptr;

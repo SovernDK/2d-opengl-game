@@ -29,15 +29,16 @@ public:
 
 	virtual void registerContext(core::IContext* ctx) = 0;
 	virtual void requestRemoveLast() = 0;
+	virtual void requestClearAll() = 0;
 
 	virtual void update(float dt) = 0;
 	virtual void draw() = 0;
 	virtual void quit() = 0;
 
 	template<typename T>
-	void registerScene(std::shared_ptr<IScene> scene)
+	void registerScene(std::string name)
 	{
-		registerScene(typeid(T), scene);
+		registerScene(typeid(T), std::make_shared<T>(name));
 	}
 
 	template<typename T>
@@ -68,7 +69,12 @@ protected:
 
 	void unloadScene() override
 	{
-		m_activeScenes.back()->quit(ctx);
+		// In unlikely case unloading of a scene is called twice (debugging) dont 
+		// double the action
+		if (m_activeScenes.empty()) 
+			return;
+
+		m_activeScenes.back()->unload(ctx);
 		m_activeScenes.pop_back();
 	}
 
@@ -104,6 +110,14 @@ public:
 		pending.push_back(TransitionRequest{ .sceneId = typeid(*this), .mode = TransitionMode::PopBack });
 	}
 
+	void requestClearAll() override
+	{
+		for (auto& scene : m_activeScenes)
+		{
+			requestRemoveLast();
+		}
+	}
+
 	void update(float dt) override
 	{
 		for (auto& scene : m_activeScenes)
@@ -116,6 +130,8 @@ public:
 			switch (request.mode)
 			{
 			case TransitionMode::Replace:
+				unloadScene();
+				addScene(request);
 				break;
 			case TransitionMode::Additive:
 				addScene(request);

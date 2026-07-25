@@ -21,6 +21,8 @@ namespace core
 {
 	class Game : public IContext
 	{
+	private:
+		bool initialized = false;
 	public:
 		int screenWidth = 0,
 			screenHeight = 0;
@@ -47,11 +49,11 @@ namespace core
 
 		void init(AppState& state);
 		void update(float dt) const;
-		void input(SDL_Event& e, float dt);
-		void draw() const;
+		void input(SDL_Event& e, float dt) const;
+		void draw(float dt) const;
 		void quit() const;
 
-		void resize(int viewportWidth, int viewportHeight);
+		void resize(int viewportWidth, int viewportHeight) const;
 
 		const ecs::ECSWorld& getWorld() { return *world; }
 		glm::vec2 getScreenDim() const { return glm::vec2(this->screenWidth, this->screenHeight); }

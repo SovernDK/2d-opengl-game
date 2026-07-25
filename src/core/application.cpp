@@ -2,6 +2,8 @@
 #include "core/application.h"
 #include "core/app_state.h"
 #include "core/config.h"
+#include "core/settings.h"
+#include "core/texts.h"
 #include "core/profiler.h"
 
 #include <imgui/imgui_impl_sdl3.h>
@@ -25,13 +27,33 @@ SDL_AppResult Application::Init(void** appState, int argc, char** argv)
 
     printCompilerInfo();
 
-    AppState* context = new AppState();
-
-    bool configLoaded = GConfig.load(file_util::createPath("config.json"));
+    bool configLoaded = GConfig.load(file_util::createPath("assets", "data", "config.json"));
     if (!configLoaded) {
         SDL_Log("Unable to load config! Closing the app.");
         return SDL_APP_FAILURE;
     }
+
+    bool settingsLoaded = GSettings.load(GConfig.data("settings.json"));
+    if (!settingsLoaded)
+    {
+		SDL_Log("Unable to load settings! Closing the app.");
+		return SDL_APP_FAILURE;
+    }
+
+    std::string language = GSettings.content["language"];
+	bool textLoaded = GTexts.load(GConfig.texts(std::format("{}.{}", language, "json")));
+	if (!textLoaded)
+	{
+		SDL_Log("Unable to load text file! Closing the app.");
+		return SDL_APP_FAILURE;
+	}
+
+    AppState* context = new AppState();
+
+	context->width = GSettings.content["video"]["windowWidth"];
+	context->height = GSettings.content["video"]["windowHeight"];
+	context->internalWidth = GSettings.content["video"]["internalWidth"];
+	context->internalHeight = GSettings.content["video"]["internalHeight"];
 
     initSDL(*context);
 
@@ -48,7 +70,7 @@ SDL_AppResult Application::Init(void** appState, int argc, char** argv)
         return SDL_APP_FAILURE;
     }
 
-    game = Game(context->viewportWidth, context->viewportHeight);
+    game = Game(context->internalWidth, context->internalHeight);
     game.init(*context);
     game.arena = &frameArena;
 
@@ -67,7 +89,7 @@ SDL_AppResult Application::Iterate(void* appState)
 
     Profiler::instance().update();
     game.update(Profiler::instance().getDeltaTime());
-    game.draw();
+    game.draw(Profiler::instance().getDeltaTime());
 
     context->activeRenderer->render(*game.mainCam.get());
 
@@ -115,8 +137,8 @@ void Application::Quit(void* appState, SDL_AppResult result)
             MIX_Quit();
         }
 
-        delete context;
-        SDL_Log("App context freed");
+		delete context;
+		SDL_Log("App context freed");
     }
 
     SDL_Quit();

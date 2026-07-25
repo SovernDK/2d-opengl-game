@@ -1,0 +1,16 @@
+{
+    "defaultFontName": "Magda-Ld4",
+
+    "assetsDir": "assets",
+    "dataDir": "data",
+    "fontsDir": "fonts",
+    "shadersDir": "shaders",
+    "logsDir": "logs",
+    "textsDir": "texts",
+
+    "shaders": {
+        "default": "default",
+        "ui": "ui",
+        "font": "ttf"
+    }
+}

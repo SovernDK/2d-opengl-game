@@ -20,7 +20,8 @@ struct PrimitiveData
 
 struct TextData
 {
-	std::string text; //std::string_view
+	std::string_view text;
+	std::string_view font;
 	int fontSize = 0;
 	glm::vec2 origin = glm::vec2(0.0f);
 };
@@ -35,7 +36,7 @@ enum class CommandType
 struct RenderCommand
 {
 	CommandType type			= CommandType::Sprite;
-	float depth					= 0;
+	int depth					= 0;
 	Mesh* mesh					= nullptr;
 	MaterialInstance* instance	= nullptr;
 	

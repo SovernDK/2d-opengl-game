@@ -1,4 +1,5 @@
 #pragma once
+#define NOMINMAX
 #include "SDL3/SDL.h"
 
 #include "glm/glm.hpp"
@@ -15,6 +16,12 @@ namespace util_vec {
     {
         return glm::distance(a, b) < glm::epsilon<float>();
     }
+
+	inline glm::vec2 lerp(glm::vec2 a, glm::vec2 b, float t)
+	{
+		return glm::vec2{ a.x + t * (b.x - a.x),
+						  a.y + t * (b.y - a.y) };
+	}
 }
 
 namespace random
@@ -31,7 +38,7 @@ namespace random
 
     inline uint32_t Seed()
     {
-        return std::uniform_int_distribution<uint32_t>(0, std::numeric_limits<uint32_t>::max())(gen);
+        return std::uniform_int_distribution<uint32_t>(0, (std::numeric_limits<uint32_t>::max)())(gen);
     }
 
     inline int Int(int min, int max)

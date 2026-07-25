@@ -1,6 +1,5 @@
 #pragma once
 #include "services/ui_service.h"
-#include "rmui/ui_widget.h"
 #include "graphics/material.h"
 #include "utility/utils.h"
 
@@ -10,9 +9,9 @@
 #include "graphics/graphics.h"
 
 #include "magic_enum/magic_enum.hpp"
-
 #include "graphics/rendering/canvas_2d.h"
 
+using namespace rmui;
 using json = nlohmann::json;
 
 void UIService::loadStyles(json data)
@@ -21,61 +20,47 @@ void UIService::loadStyles(json data)
 	{
 		std::unique_ptr<StyleComponent> style = std::make_unique<StyleComponent>();
 		style->name = key;
+		style->alpha = val.value("alpha", 255);
 
-		std::string hexBGColor = val.value("backgroundColor", "#000000");
-		std::string hexHoverColor = val.value("hoverColor", "#000000");
-		uint8_t alpha = val.value("alpha", 255);
-
-		SDL_Color bgColor = HexToRGBA(hexBGColor, alpha);
-		SDL_Color hoverColor = HexToRGBA(hexHoverColor, alpha);
-
-		style->bgColor = bgColor;
-		style->hoverColor = hoverColor;
-
-		#pragma region Font
-		if (val.contains("fontName"))
+		if (val.contains("background"))
 		{
-			style->fontName = val.value("fontName", "default");
+			auto& backVal = val["background"];
+
+			auto color = backVal.value("color", "#000000");
+			auto hoverColor = backVal.value("hoverColor", "#000000");
+			auto textureHandle = backVal.value("texture", "0");
+
+			style->back = rmui::StyleBackground();
+			style->back.keepAspectRatio = backVal.value("keepAspectRatio", false);
+			if(textureHandle != "0")
+				style->back.texture = Resources::texture(textureHandle)->id;
+			style->back.color = HexToRGBA(color, style->alpha);
+			style->back.hoverColor = HexToRGBA(hoverColor, style->alpha);
 		}
 
-		if (val.contains("fontSize"))
+		if (val.contains("text"))
 		{
-			style->fontSize = val.value("fontSize", 24);
+			auto& textVal = val["text"];
+
+			auto color = textVal.value("color", "#000000");
+			auto hoverColor = textVal.value("hoverColor", "#000000");
+			auto textOverflow = textVal.value("overflow", "ellipsis");
+			auto textAlign = textVal.value("align", "left");
+			auto vtextAlign = textVal.value("valign", "top");
+
+			style->text = rmui::StyleText();
+			style->text.font = textVal.value("font", "default");
+			style->text.size = textVal.value("size", 24);
+			style->text.color = HexToRGBA(color, style->alpha);
+			style->text.hoverColor = HexToRGBA(hoverColor, style->alpha);
+
+			style->text.overflow = magic_enum::enum_cast<TextOverflow>(textOverflow, magic_enum::case_insensitive)
+				.value_or(TextOverflow::Ellipsis);
+			style->text.align = magic_enum::enum_cast<TextAlign>(textAlign, magic_enum::case_insensitive)
+				.value_or(TextAlign::Left);
+			style->text.valign = magic_enum::enum_cast<TextVertAlign>(vtextAlign, magic_enum::case_insensitive)
+				.value_or(TextVertAlign::Top);
 		}
-
-		if (val.contains("fontColor"))
-		{
-			std::string hexFontColor = val.value("fontColor", "#000000");
-			SDL_Color fontColor = HexToRGBA(hexFontColor, 255);
-
-			style->fontColor = fontColor;
-		}
-
-		if (val.contains("fontHoverColor"))
-		{
-			std::string hexFontHoverColor = val.value("fontHoverColor", "#000000");
-			SDL_Color fontHoverColor = HexToRGBA(hexFontHoverColor, 255);
-
-			style->fontHoverColor = fontHoverColor;
-		}
-
-		if (val.contains("fontOverflow"))
-		{
-			
-		}
-
-		if (val.contains("textAlign"))
-		{
-			std::string textAlign = val.value("textAlign", "left");
-			style->align = magic_enum::enum_cast<TextAlign>(textAlign, magic_enum::case_insensitive).value_or(TextAlign::Left);
-		}
-
-		if (val.contains("vtextAlign"))
-		{
-			std::string vtextAlign = val.value("vtextAlign", "top");
-			style->valign = magic_enum::enum_cast<TextVertAlign>(vtextAlign, magic_enum::case_insensitive).value_or(TextVertAlign::Top);
-		}
-		#pragma endregion
 
 		if (val.contains("horizontalLayout"))
 		{
@@ -89,7 +74,12 @@ void UIService::loadStyles(json data)
 
 			layout->margin	= margin;
 			layout->spacing = val["horizontalLayout"].value("spacing", 0);
-			layout->expand	= val["horizontalLayout"].value("expand", false);
+			//layout->expand = val["horizontalLayout"].value("expand", false);
+
+			auto expand = val["horizontalLayout"]["margin"].value("expand", "both");
+			layout->expand = magic_enum::enum_cast<Expand>(expand, magic_enum::case_insensitive)
+				.value_or(Expand::None);
+
 			layout->fit		= val["horizontalLayout"].value("fit", false);
 
 			style->layoutStrategy = std::move(layout);
@@ -108,7 +98,12 @@ void UIService::loadStyles(json data)
 
 			layout->margin	= margin;
 			layout->spacing = val["verticalLayout"].value("spacing", 0);
-			layout->expand	= val["verticalLayout"].value("expand", false);
+			
+			//layout->expand	= val["verticalLayout"].value("expand", false);
+			auto expand = val["verticalLayout"]["margin"].value("expand", "both");
+			layout->expand = magic_enum::enum_cast<Expand>(expand, magic_enum::case_insensitive)
+				.value_or(Expand::None);
+
 			layout->fit		= val["verticalLayout"].value("fit", false);
 
 			style->layoutStrategy = std::move(layout);
@@ -129,7 +124,7 @@ void UIService::loadStyles(json data)
 	}
 }
 
-void UIService::realizeStyle(UIWidget& widget)
+void UIService::realizeStyle(rmui::UIWidget& widget, float dt)
 {
 	auto it = styles.find(widget.style);
 	if (it == styles.end() || !it->second)
@@ -139,31 +134,24 @@ void UIService::realizeStyle(UIWidget& widget)
 	}
 	auto& style = *it->second;
 
-	SDL_Color color = style.bgColor;
+	for (auto& [_, comp] : widget.components)
+	{
+		comp->realize(&widget);
+	}
 
-	if(widget.interaction)
-		color = widget.interaction->hovered ? style.hoverColor : style.bgColor;
-
-	widget.material().setProperty("mainColor", color::SDLColorToVec4(color));
-
-	for (auto& comp : widget.components)
-		comp.second->realize(&widget, style);
-
-	Canvas2D::clear();
+	Canvas2D::reset();
 }
 
 void UIService::init(int width, int height)
 {
-	canvasWidth = width;
+	canvasWidth	 = width;
 	canvasHeight = height;
 
-	m_root = std::make_shared<UIWidget>(idPool.next());
+	m_root = std::make_shared<rmui::UIWidget>(idPool.next());
 	m_root->rect = UIRect(0, 0, canvasWidth, canvasHeight);
 	m_root->setLocalPosition(0.0f, 0.0f);
 	m_root->setLocalSize(1.0f, 1.0f);
 	m_root->style = "root";
-
-	m_root->addComponent<UIBackground>();
 
 	ids[m_root->id] = m_root;
 	handles["root"] = m_root;
@@ -178,21 +166,23 @@ void UIService::resizeCanvas(int width, int height)
 	m_root->dirtyUpdate = true;
 }
 
-void UIService::draw()
+void UIService::draw(float dt)
 {
 	if (!m_root) 
 		return;
 
+	progressAnimations(dt);
+
 	submissionIndex = UI_Z;
-	drawRecursive(m_root.get(), m_root->rect.renderRect());
-	Canvas2D::clear();
+	drawRecursive(m_root.get(), m_root->rect.renderRect(), dt);
+	Canvas2D::reset();
 }
 
 void UIService::update()
 {
 	if (m_root->dirtyUpdate)
 	{
-		AbsoluteLayout rootStrategy{};
+		AbsoluteLayout rootStrategy;
 		updateRecursive(m_root.get(), UIRect(0, 0, canvasWidth, canvasHeight), rootStrategy, 0);
 	}
 }
@@ -230,14 +220,14 @@ void UIService::handleInput(SDL_Event& e)
 
 }
 
-void UIService::drawRecursive(UIWidget* widget, const glm::vec4 parentClip)
+void UIService::drawRecursive(rmui::UIWidget* widget, const glm::vec4 parentClip, float dt)
 {
 	if (!AABB(widget->rect.renderRect(), m_root->rect.renderRect()))
 		return;
 
 	if (!widget->visible) return;
 
-	realizeStyle(*widget);
+	realizeStyle(*widget, dt);
 
 	glm::vec4 prevClip = parentClip;
 	glm::vec4 currentClip = parentClip;
@@ -257,24 +247,22 @@ void UIService::drawRecursive(UIWidget* widget, const glm::vec4 parentClip)
 
 	currentClip = glm::vec4(left, top, width, height);
 
+	Canvas2D::setIsClipping(widget->clipping);
 	Canvas2D::setClipping(currentClip);
 	Canvas2D::setDepth(submissionIndex++);
 
 	for (auto& child : widget->children())
 	{
-		drawRecursive(child.get(), currentClip);
+		drawRecursive(child.get(), currentClip, dt);
 	}
 
 	Canvas2D::setClipping(prevClip);
 }
 
-void UIService::updateRecursive(UIWidget* widget, const UIRect& parentRect, ILayoutStrategy& strategy, int index)
+void UIService::updateRecursive(rmui::UIWidget* widget, const UIRect& parentRect, ILayoutStrategy& strategy, int index)
 {
-	widget->rect = strategy.layout(*widget, parentRect, index);
+	widget->rect = strategy.layout(*widget, parentRect, index, false);
 	auto* layoutStrategy = styles[widget->style]->layoutStrategy.get();
-
-	for (auto& comp : widget->components)
-		comp.second->update(widget);
 
 	widget->dirtyUpdate = false;
 
@@ -286,7 +274,7 @@ void UIService::updateRecursive(UIWidget* widget, const UIRect& parentRect, ILay
 	}
 }
 
-void UIService::topWidgetAtPos(UIWidget* widget, glm::vec2 mousePos)
+void UIService::topWidgetAtPos(rmui::UIWidget* widget, glm::vec2 mousePos)
 {
 	for(auto& child : widget->children())
 	{
@@ -316,10 +304,15 @@ void UIService::destroy(const std::string& handle)
 	destroy(handles[handle]);
 }
 
-void UIService::destroy(const std::shared_ptr<UIWidget>& widget)
+void UIService::destroy(const std::shared_ptr<rmui::UIWidget>& widget)
 {
 	for (auto& child : widget->children())
 		destroy(child);
+
+	std::erase_if(m_animations, [widget](const auto& animation)
+	{
+		return animation.first == widget->id;
+	});
 
 	idPool.releaseId(widget->id);
 
@@ -331,12 +324,12 @@ void UIService::destroy(const std::shared_ptr<UIWidget>& widget)
 		handles.erase(widget->handle);
 }
 
-void UIService::destroy(const UIWidget* widget)
+void UIService::destroy(const rmui::UIWidget* widget)
 {
 	destroy(widget);
 }
 
-UIWidget* const UIService::widget(int id) const
+rmui::UIWidget* const UIService::widget(int id) const
 {
 	if (ids.contains(id))
 	{
@@ -347,7 +340,7 @@ UIWidget* const UIService::widget(int id) const
 	return nullptr;
 }
 
-UIWidget* const UIService::widget(std::string handle) const
+rmui::UIWidget* const UIService::widget(std::string handle) const
 {
 	if (handles.contains(handle))
 	{

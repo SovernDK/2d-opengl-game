@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <typeindex>
 #include <vector>
+#include <set>
 #include <string>
 #include <memory>
 #include <format>
@@ -25,9 +26,12 @@ namespace ecs
 
 	class Entity
 	{
+	private:
+		bool destroyed = false;
+		bool enabled = true;
 	public:
 		EntityId id = 0;
-		ECSWorld* world;
+		ECSWorld* world = nullptr;
 	public:
 		~Entity() = default;
 
@@ -40,13 +44,23 @@ namespace ecs
 		Entity& operator=(Entity&&) = default;
 
 		template<typename T>
-		Entity& add(T copyObj);
+		Entity& add(T&& copyObj);
+
+		Entity& childOf(EntityId parentId);
 
 		template<typename T>
 		const T* const get();
 
 		template<typename T>
 		T* const getMod();
+
+		Entity& enable();
+		Entity& disable();
+		void destroy();
+
+		const std::vector<EntityId>& children();
+
+		friend class ECSWorld;
 	};
 
 	struct ITypeBucket
@@ -65,8 +79,6 @@ namespace ecs
 	template<typename T>
 	struct TypeBucket : ITypeBucket
 	{
-		~TypeBucket() = default;
-
 		std::unordered_map<EntityId, std::unique_ptr<T>> items;
 		size_t size() const override { return items.size(); }
 		std::type_index type() override { return typeid(T); }
@@ -79,6 +91,7 @@ namespace ecs
 	struct ISystem
 	{
 		virtual ~ISystem() = default;
+
 		virtual void run(ECSWorld& world) = 0;
 	};
 
@@ -99,18 +112,26 @@ namespace ecs
 		std::unordered_map<EntityId, Entity> entities;
 		std::unordered_map<std::string, Entity*> lookupTable;
 		std::unordered_map<std::type_index, std::shared_ptr<ITypeBucket>> components;
+		std::unordered_set<EntityId> deletedEntities;
+
+		std::unordered_map<EntityId, std::vector<EntityId>> childrenOf;
+		// Key is child Id, value is Parent Id
+		std::unordered_map<EntityId, EntityId> parentOf;
 
 		std::vector<std::unique_ptr<ISystem>> systems;
 
 		IdPool<EntityId> idPool;
 	public:
-		ECSWorld() {
+		ECSWorld() 
+		{
 			entities.emplace(0, Entity(this, 0));
 		};
 		~ECSWorld() = default;
 
 		ECSWorld(const ECSWorld&) = delete;
 		ECSWorld& operator=(const ECSWorld&) = delete;
+		ECSWorld(ECSWorld&&) = delete;
+		ECSWorld& operator=(ECSWorld&&) = delete;
 	public:
 		Entity& create();
 		Entity& create(const std::string& handle);
@@ -118,11 +139,14 @@ namespace ecs
 		Entity& entity(EntityId id);
 		Entity& entity(std::string handle);
 
+		void destroy(Entity& e);
 		void destroy(EntityId id);
-		void destroy(Entity e);
+		void enable(EntityId id);
+		void enable(Entity& e);
+		void disable(EntityId id);
+		void disable(Entity& e);
 
-		void each(std::function<void(Entity&)> fn);
-		void process();
+		void process(float dt);
 		auto types(EntityId id) -> std::vector<std::pair<std::type_index, void*>>;
 
 		void quit();
@@ -130,16 +154,22 @@ namespace ecs
 		std::string name(EntityId id);
 
 		template<typename T>
-		void addComponent(EntityId id, T copyObj);
+		void addComponent(EntityId id, T&& copyObj);
 
 		template<typename T>
 		void addComponent(EntityId id);
+
+		void setChildOf(EntityId parent, EntityId child);
+		const std::vector<EntityId>& getChildrenOf(EntityId parentId);
 
 		template<typename T>
 		const T* const get(EntityId id);
 
 		template<typename T>
 		T* const getMod(EntityId id);
+
+		void each(std::function<void(Entity&)> fn);
+		void each(bool hasParent, std::function<void(Entity&)> fn);
 
 		template<typename... Ts, typename Fn>
 		void view(Fn fn);
@@ -152,6 +182,9 @@ namespace ecs
 
 		template<typename T>
 		TypeBucket<T>* getType();
+	
+	private:
+		void processDestroy(EntityId id);
 	};
 #pragma endregion
 
@@ -178,9 +211,15 @@ namespace ecs
 
 	#pragma region Entity
 	template<typename T>
-	inline Entity& Entity::add(T copyObj)
+	inline Entity& Entity::add(T&& obj)
 	{
-		world->addComponent<T>(id, copyObj);
+		world->addComponent<T>(id, std::forward<T>(obj));
+		return *this;
+	}
+
+	inline Entity& Entity::childOf(EntityId parentId)
+	{
+		world->setChildOf(parentId, id);
 		return *this;
 	}
 
@@ -194,6 +233,28 @@ namespace ecs
 	T* const Entity::getMod()
 	{
 		return world->getMod<T>(id);
+	}
+
+	inline Entity& Entity::enable()
+	{
+		world->enable(*this);
+		return *this;
+	}
+
+	inline Entity& Entity::disable()
+	{
+		world->disable(*this);
+		return *this;
+	}
+
+	inline void Entity::destroy()
+	{
+		world->destroy(*this);
+	}
+
+	inline const std::vector<EntityId>& Entity::children() 
+	{
+		return world->getChildrenOf(id);
 	}
 	#pragma endregion
 
@@ -249,25 +310,49 @@ namespace ecs
 		return entities[0];
 	}
 
-	inline void ECSWorld::destroy(EntityId id)
+	inline void ECSWorld::destroy(Entity& e)
 	{
-		auto it = std::find_if(lookupTable.begin(), lookupTable.end(), [id](const auto& pair)
-		{
-			return pair.second->id == id;
-		});
-		if (it != lookupTable.end()) lookupTable.erase(it);
+		e.destroyed = true;
+		deletedEntities.insert(e.id);
 
-		entities.erase(id);
-
-		for (auto& [type, bucketPtr] : components)
+		for (auto childId : e.children())
 		{
-			bucketPtr->removeById(id);
+			destroy(childId);
 		}
 	}
 
-	inline void ECSWorld::destroy(Entity e)
+	inline void ECSWorld::destroy(EntityId id)
 	{
-		destroy(e.id);
+		auto& e = entity(id);
+		destroy(e);
+	}
+
+	inline void ECSWorld::enable(EntityId id)
+	{
+		enable(entity(id));
+	}
+
+	inline void ECSWorld::enable(Entity& e)
+	{
+		e.enabled = true;
+		for (auto childId : e.children())
+		{
+			enable(childId);
+		}
+	}
+
+	inline void ECSWorld::disable(EntityId id)
+	{
+		disable(entity(id));
+	}
+
+	inline void ECSWorld::disable(Entity& e)
+	{
+		e.enabled = false;
+		for (auto childId : e.children())
+		{
+			enable(childId);
+		}
 	}
 
 	inline void ECSWorld::each(std::function<void(Entity&)> fn)
@@ -278,12 +363,41 @@ namespace ecs
 		}
 	}
 
-	inline void ECSWorld::process()
+	inline void ECSWorld::each(bool hasParent, std::function<void(Entity&)> fn)
+	{
+		if (hasParent)
+		{
+			for (auto& [rootId, children] : childrenOf)
+			{
+				for (auto& childId : children)
+					fn(entities[childId]);
+			}
+		}
+		else
+		{
+			for (auto& [id, entity] : entities)
+			{
+				const bool entityHasParent = parentOf.find(id) != parentOf.end();
+				if (!entityHasParent)
+					fn(entity);
+			}
+		}
+	}
+
+	inline void ECSWorld::process(float dt)
 	{
 		for (auto& sys : systems)
 		{
 			sys->run(*this);
 		}
+
+		//destroy entities marked 'deleted'
+		for (auto& id : deletedEntities)
+		{
+			processDestroy(id);
+		}
+
+		deletedEntities.clear();
 	}
 
 	inline auto ECSWorld::types(EntityId id) -> std::vector<std::pair<std::type_index, void*>>
@@ -291,7 +405,9 @@ namespace ecs
 		std::vector<std::pair<std::type_index, void*>> out;
 		for (auto& [type, bucket] : components)
 		{
-			out.push_back(std::pair(bucket->type(), bucket->getRawPtr(id)));
+			auto* ptr = bucket->getRawPtr(id);
+			if(ptr)
+				out.push_back(std::pair(bucket->type(), ptr));
 		}
 
 		return out;
@@ -338,7 +454,7 @@ namespace ecs
 	}
 
 	template<typename T>
-	inline void ECSWorld::addComponent(EntityId id, T copyObj)
+	inline void ECSWorld::addComponent(EntityId id, T&& obj)
 	{
 		if (id == 0)
 		{
@@ -349,7 +465,7 @@ namespace ecs
 
 		auto [it, _] = components.try_emplace(typeid(T), std::make_unique<TypeBucket<T>>());
 		auto* bucket = static_cast<TypeBucket<T>*>(it->second.get());
-		bucket->items[id] = std::make_unique<T>(copyObj);
+		bucket->items[id] = std::make_unique<T>(std::forward<T>(obj));
 	};
 
 	template<typename T>
@@ -366,6 +482,30 @@ namespace ecs
 		auto* bucket = static_cast<TypeBucket<T>*>(it->second.get());
 		bucket->items[id] = std::make_unique<T>();
 	};
+
+	inline void ECSWorld::setChildOf(EntityId parentId, EntityId childId)
+	{
+		if (childrenOf.contains(parentId))
+		{
+			childrenOf.at(parentId).push_back(childId);
+			parentOf.insert({ childId, parentId });
+		}
+		else
+		{
+			std::vector<EntityId> children{ childId };
+
+			childrenOf.insert({ parentId, children });
+			parentOf.insert({ childId, parentId });
+		}
+	}
+
+	inline const std::vector<EntityId>& ECSWorld::getChildrenOf(EntityId parentId)
+	{
+		if (childrenOf.contains(parentId))
+			return childrenOf.at(parentId);
+		else
+			return {};
+	}
 
 	template<typename T>
 	inline const T* const ECSWorld::get(EntityId id)
@@ -409,10 +549,14 @@ namespace ecs
 
 		for (auto& [id, _] : first->items)
 		{
+			auto& e = entity(id);
+			if (e.destroyed || !e.enabled) 
+				continue;
+
 			bool hasAll = (std::get<TypeBucket<Ts>*>(buckets)->items.contains(id) && ...);
 			if (!hasAll) continue;
 
-			fn(entity(id), *static_cast<Ts*>(std::get<TypeBucket<Ts>*>(buckets)->items.at(id).get())...);
+			fn(e, *static_cast<Ts*>(std::get<TypeBucket<Ts>*>(buckets)->items.at(id).get())...);
 		}
 	}
 
@@ -438,6 +582,36 @@ namespace ecs
 		auto it = components.find(typeid(T));
 		if (it == components.end()) return nullptr;
 		return static_cast<TypeBucket<T>*>(it->second.get());
+	}
+
+	inline void ECSWorld::processDestroy(EntityId id)
+	{
+		auto& e = entity(id);
+
+		if(parentOf.contains(id))
+		{
+			auto& parentsChildren = childrenOf[parentOf[id]];
+			auto it = std::find(parentsChildren.begin(), parentsChildren.end(), id);
+			if (it != parentsChildren.end())
+				parentsChildren.erase(it);
+
+			parentOf.erase(id);
+		}
+
+		auto it = std::find_if(lookupTable.begin(), lookupTable.end(), [id](const auto& pair)
+		{
+			return pair.second->id == id;
+		});
+		if (it != lookupTable.end()) lookupTable.erase(it);
+
+		entities.erase(id);
+
+		for (auto& [_, bucketPtr] : components)
+		{
+			bucketPtr->removeById(id);
+		}
+
+		idPool.releaseId(id);
 	}
 	#pragma endregion
 

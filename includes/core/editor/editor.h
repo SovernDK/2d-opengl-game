@@ -6,7 +6,7 @@
 #include "editor/world_map_edit.h"
 #include <SDL3/SDL_stdinc.h>
 
-class UIWidget;
+namespace rmui { class UIWidget; }
 class ICamera;
 
 namespace editor
@@ -46,15 +46,16 @@ namespace editor
 		void cameraInspector(ICamera& camera);
 
 		void worldTree(ecs::ECSWorld& world);
+		void entityTreeNode(ecs::ECSWorld& world, ecs::Entity& entity);
 		void entityInspector(ecs::ECSWorld& world);
 
-		void uiGeneral();
+		void uiDock();
 
 		void sceneEditor();
 		void stateEditor(std::string currentState);
 
 		void uiTree();
-		void uiNode(const UIWidget& widget);
+		void uiNode(const rmui::UIWidget& widget);
 		void uiInspector() const;
 	};
 }

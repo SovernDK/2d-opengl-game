@@ -9,6 +9,7 @@
 #include "services/log_service.h"
 
 #include <fstream>
+#include <filesystem>
 
 using json = nlohmann::json;
 
@@ -66,4 +67,9 @@ json FileService::loadJsonFile(const std::string& path)
     {
         throw std::runtime_error("Unexpected error loading: " + path + "\n" + e.what());
     }
+}
+
+json FileService::loadJsonFile(const std::filesystem::path path)
+{
+    return loadJsonFile(path.string());
 }

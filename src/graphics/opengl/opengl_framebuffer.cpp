@@ -52,7 +52,6 @@ void Framebuffer::resize(int newWidth, int newHeight)
 	if (newWidth == m_width && newHeight == m_height)
 		return;
 
-	// Reuses the same recreation logic, keeping the same attachment index.
 	attachmentColor(m_colorIndex, newWidth, newHeight);
 }
 

@@ -8,36 +8,46 @@
 #include <resources.h>
 #include <canvas_2d.h>
 
-UIRect AbsoluteLayout::layout(UIWidget& self, const UIRect& parentRect, int index)
+using namespace rmui;
+
+UIRect IgnoreLayout::layout(UIWidget& self, const UIRect& parentRect, int index, bool last)
+{
+	return self.rect;
+}
+
+UIRect AbsoluteLayout::layout(UIWidget& self, const UIRect& parentRect, int index, bool last)
 {
 	UIRect rect{ 0 };
 	rect.pos  = parentRect.pos + self.localRect.pos * parentRect.size;
 	rect.size = self.localRect.size * parentRect.size;
 
 	rect.pos -= self.pivot * rect.size;
+	rect.pos += self.offset;
 
 	return rect;
 }
 
-UIRect HorizontalLayout::layout(UIWidget& self, const UIRect& parentRect, int index)
+UIRect HorizontalLayout::layout(UIWidget& self, const UIRect& parentRect, int index, bool last)
 {
-	UIRect rect;
+	UIRect rect{ 0 };
 	rect.size = self.localRect.size * parentRect.size;
 
-	if (expand)
+	if (expand == Expand::Both)
 		rect.size.y = parentRect.size.y - margin.top - margin.bottom;
 
 	if (fit)
 	{
 		int childrenSize = self.parent.lock()->children().size();
-		int availableWidth = parentRect.size.x / childrenSize;
-		int spacingTotal = spacing / std::max(1, childrenSize - 1);
-		rect.size.x = availableWidth - spacingTotal - margin.right;
+		float availableWidth = parentRect.size.x / childrenSize;
+		float defSpacing = spacing * (childrenSize - 1) / childrenSize;
+
+		rect.size.x = availableWidth - defSpacing - margin.right;
 	}
 
 	if (self.parent.expired() || index == 0)
 	{
 		rect.pos = glm::vec2(margin.left + parentRect.pos.x, margin.top + parentRect.pos.y);
+		rect.pos += self.offset;
 		return rect;
 	}
 
@@ -47,30 +57,34 @@ UIRect HorizontalLayout::layout(UIWidget& self, const UIRect& parentRect, int in
 
 	float posX = prevChild.pos.x + prevChild.size.x + spacing;
 	float posY = margin.top + parentRect.pos.y;
+
 	rect.pos = glm::vec2(posX, posY);
+	rect.pos += self.offset;
 
 	return rect;
 }
 
-UIRect VerticalLayout::layout(UIWidget& self, const UIRect& parentRect, int index)
+UIRect VerticalLayout::layout(UIWidget& self, const UIRect& parentRect, int index, bool last)
 {
 	UIRect rect{ 0 };
 	rect.size = self.localRect.size * parentRect.size;
 
-	if (expand)
+	if (expand == Expand::Both)
 		rect.size.x = parentRect.size.x - margin.left - margin.right;
 	
 	if (fit)
 	{
 		int childrenSize = self.parent.lock()->children().size();
-		int availableHeight = parentRect.size.y / childrenSize;
-		int spacingTotal = spacing / std::max(1, childrenSize - 1);
-		rect.size.y = availableHeight - spacingTotal - margin.bottom;
+		float availableHeight = parentRect.size.y / childrenSize;
+		float defSpacing = spacing * (childrenSize - 1) / childrenSize;
+
+		rect.size.y = availableHeight - defSpacing - margin.bottom;
 	}
 
 	if (self.parent.expired() || index == 0)
 	{
 		rect.pos = glm::vec2(margin.left + parentRect.pos.x, margin.top + parentRect.pos.y);
+		rect.pos += self.offset;
 		return rect;
 	}
 
@@ -80,7 +94,9 @@ UIRect VerticalLayout::layout(UIWidget& self, const UIRect& parentRect, int inde
 
 	float posX = margin.left + parentRect.pos.x;
 	float posY = prevChild.pos.y + prevChild.size.y + spacing;
+
 	rect.pos = glm::vec2(posX, posY);
+	rect.pos += self.offset;
 
 	return rect;
 }

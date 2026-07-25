@@ -38,20 +38,44 @@ struct Glyph
 	Glyph& operator=(const Glyph&) = default;
 };
 
+
+struct FontSize
+{
+	TexID atlas{ 0 };
+	std::array<Glyph, 128> glyphs;
+};
+
+//Rework to std::array (set size at the beggining since fonts used are static)
 struct Font
 {
-	std::vector<std::pair<int, TexID>> atlas;
+	std::vector<std::pair<int, FontSize>> sizes;
 	std::array<Glyph, 128> glyphs;
 
-	TexID texture(int fontSize) const
+	void addSize(int size)
 	{
-		for (auto& row : atlas)
+		sizes.push_back({ size, FontSize{} });
+	}
+
+	TexID atlas(int size)
+	{
+		for (auto& row : sizes)
 		{
-			if (row.first == fontSize)
-				return row.second;
+			if (row.first == size)
+				return row.second.atlas;
 		}
 
 		return TexID{ 0 };
+	}
+
+	FontSize* size(int size)
+	{
+		for (auto& row : sizes)
+		{
+			if (row.first == size)
+				return &row.second;
+		}
+
+		return nullptr;
 	}
 };
 
@@ -92,6 +116,8 @@ public:
 	static Texture2D* saveTexture(Texture2D&& texture, std::string name);
 	static Texture2D* loadTexture(const std::filesystem::path& path, const std::string& name);
 	static Texture2D* loadTexture(const std::filesystem::path& path, const std::string& name, TextureBuilder& builder);
+	static bool textureExist(const std::string& name);
+	static void releaseTexture(const std::string& name);
 
 	static Texture2D* texture(const std::string& name);
 	static Texture2D* texture(TexID id);

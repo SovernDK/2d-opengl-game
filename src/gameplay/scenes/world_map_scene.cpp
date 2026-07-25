@@ -16,11 +16,9 @@
 #include <utility/file_util.h>
 #include <services/ui_service.h>
 
-#include "core/ecs/clan_components.h"
-#include "scenes/clans_list_scene.h"
 #include "scenes/main_menu_scene.h"
+#include <scenes/loading_scene.h>
 
-//MapGeneration buildMapData(const std::shared_ptr<const ecs::MapGenSettings> settings);
 MapGeneration buildMapData(const ecs::MapGenSettings* settings);
 void applyMapToWorld(core::Game& game, MapGeneration& mapGen, int w, int h);
 void updateTerrain(core::Game& game);
@@ -30,25 +28,8 @@ using namespace ecs;
 
 void WorldMapScene::start(core::IContext* ctx)
 {
-	core::Game& game = dynamic_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*ctx);
 	auto ui = ServiceLocator::get<IUIService>();
-
-	/*for (int i = 0; i < 3; i++)
-	{
-		game.world->create()
-			.addComponent<ecs::Clan>(ecs::Clan{
-				.name = "Clan" + i,
-				.coordinate = glm::vec2(i * 20, i * 30)
-				});
-	}
-
-	game.world->system<ecs::Clan, ecs::Sprite>([](ecs::Entity& entity, ecs::Clan& t, ecs::Sprite& v)
-	{
-		SDL_Log("System run");
-	});
-
-	game.world->process();
-	game.world->print();*/
 
 	ecs::EntityId id = game.world->entity("Settings").id;
 	assert(id != 0);
@@ -59,7 +40,7 @@ void WorldMapScene::start(core::IContext* ctx)
 
 void WorldMapScene::update(core::IContext* ctx, float dt)
 {
-	core::Game& game = dynamic_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*ctx);
 	auto ui = ServiceLocator::get<IUIService>();
 
 	if (!mapReady && mapFuture.valid())
@@ -89,9 +70,14 @@ void WorldMapScene::draw(core::IContext* ctx)
 	
 }
 
+void WorldMapScene::unload(core::IContext* ctx)
+{
+
+}
+
 void WorldMapScene::quit(core::IContext* ctx)
 {
-	core::Game& game = dynamic_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*ctx);
 	auto ui = ServiceLocator::get<IUIService>();
 
 	EntityId id = game.world->entity("WorldMap").id;
@@ -116,12 +102,12 @@ void initializeWorld(core::Game& game)
 		.add<ecs::WorldMap>({})
 		.add<ecs::Sprite>({
 			.size = glm::vec2(settings->width, settings->height),
-			.depth = 1.0f,
+			.depth = 1,
 			.material{ MaterialInstance(Resources::sharedMat("terrain")) },
 			})
 		.add<ecs::Transform2D>({});
 
-	MaterialInstance temp = MaterialInstance(Resources::sharedMat("def"));
+	MaterialInstance temp = MaterialInstance(Resources::sharedMat(core::GConfig.defaultShader));
 	temp.blendMode = BlendMode::Alpha;
 	temp.setProperty("mainColor", glm::vec4(1.0f));
 	temp.setProperty("useTexture", true);
@@ -136,8 +122,7 @@ void initializeWorld(core::Game& game)
 			})
 		.add<ecs::Transform2D>(ecs::Transform2D{
 				.position = glm::vec3(850, 550, 1.0)
-			})
-		.add<ecs::Settlement>({});
+			});
 
 	game.world->create()
 		.add<ecs::Sprite>(ecs::Sprite{
@@ -146,34 +131,7 @@ void initializeWorld(core::Game& game)
 			})
 		.add<ecs::Transform2D>(ecs::Transform2D{
 				.position = glm::vec3(450, 400, 1.0)
-			})
-		.add<ecs::Settlement>({});
-
-	// =========== UI =======================
-	//auto window = ui->createWindow()
-	//	.setLocPos(UIAnchor::Top_Center)
-	//	.setLocSize(0.3f, 0.03f)
-	//	.setPivot(UIAnchor::Top_Center)
-	//	.setStyle("topbar")
-	//	.build("topbar");
-
-	////Used copy since createButton will go out of scope -> auto& btnTemp becomes null
-	//auto btnTemp = ui->createButton()
-	//	.setLocSize(0.3f, 1.0f)
-	//	.setParent(window)
-	//	.addOnClick([&](UIWidget* widget) {})
-	//	.setKeepAspect(true);
-
-	//auto exitGame = [&](UIWidget* widget)
-	//{
-	//	ServiceLocator::get<ISceneService>()->requestRemoveLast();
-	//	ServiceLocator::get<ISceneService>()->requestTransition<MainMenuScene>(TransitionMode::Additive);
-	//};
-
-	//btnTemp.addOnClick(exitGame)
-	//	.build("clans_btn");
-	//btnTemp.build("clans_btn2");
-	//btnTemp.build("clans_btn3");
+			});
 }
 
 // Async

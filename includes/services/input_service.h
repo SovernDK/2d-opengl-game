@@ -8,7 +8,6 @@
 
 #include <string>
 #include <nlohmann/json.hpp>
-#include <unordered_set>
 
 struct InputAction
 {

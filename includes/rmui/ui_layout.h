@@ -1,46 +1,60 @@
 #pragma once
 #include "glm/glm.hpp"
 
-class UIWidget;
-struct UIRect;
-class UILabel;
-struct Margin;
-struct StyleComponent;
-
-struct ILayoutStrategy
+namespace rmui
 {
-	ILayoutStrategy() = default;
-	ILayoutStrategy(const ILayoutStrategy&) = default;
-	ILayoutStrategy& operator=(const ILayoutStrategy&) = default;
+	class UIWidget;
+	class UILabel;
 
-	virtual ~ILayoutStrategy() = default;
+	struct UIRect;
+	struct Margin;
+	struct StyleComponent;
 
-    virtual UIRect layout(UIWidget& self, const UIRect& parentRect, int index) = 0;
-};
+	struct ILayoutStrategy
+	{
+		ILayoutStrategy() = default;
+		ILayoutStrategy(const ILayoutStrategy&) = default;
+		ILayoutStrategy& operator=(const ILayoutStrategy&) = default;
 
-struct HorizontalLayout : ILayoutStrategy
-{
-    float spacing = 0;
-    Margin margin{ 0 };
+		virtual ~ILayoutStrategy() = default;
 
-    bool expand = false;
-    bool fit    = false;
+		virtual UIRect layout(UIWidget& self, const UIRect& parentRect, int index, bool last) = 0;
+	};
 
-    UIRect layout(UIWidget& self, const UIRect& parentRect, int index) override;
-};
+	struct IgnoreLayout : ILayoutStrategy
+	{
+		UIRect layout(UIWidget& self, const UIRect& parentRect, int index, bool last) override;
+	};
 
-struct VerticalLayout : ILayoutStrategy
-{
-    float spacing = 0;
-    Margin margin{ 0 };
+	enum class Expand
+	{
+		None, Horiz, Vert, Both
+	};
 
-    bool expand = false;
-    bool fit    = false;
+	struct HorizontalLayout : ILayoutStrategy
+	{
+		float spacing = 0;
+		Margin margin{ 0 };
 
-    UIRect layout(UIWidget& self, const UIRect& parentRect, int index) override;
-};
+		Expand expand = Expand::None;
+		bool fit = false;
 
-struct AbsoluteLayout : ILayoutStrategy
-{
-    UIRect layout(UIWidget& self, const UIRect& parentRect, int index) override;
-};
+		UIRect layout(UIWidget& self, const UIRect& parentRect, int index, bool last) override;
+	};
+
+	struct VerticalLayout : ILayoutStrategy
+	{
+		float spacing = 0;
+		Margin margin{ 0 };
+
+		Expand expand = Expand::None;
+		bool fit = false;
+
+		UIRect layout(UIWidget& self, const UIRect& parentRect, int index, bool last) override;
+	};
+
+	struct AbsoluteLayout : ILayoutStrategy
+	{
+		UIRect layout(UIWidget& self, const UIRect& parentRect, int index, bool last) override;
+	};
+}

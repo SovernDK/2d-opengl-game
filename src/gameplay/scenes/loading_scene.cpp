@@ -9,33 +9,57 @@
 #include "scenes/loading_scene.h"
 #include "graphics/rendering/canvas_2d.h"
 
-LoadingScene::~LoadingScene() {}
+using namespace ecs;
 
 float rot = 0;
+Sprite* loader;
+Transform2D* loaderTrans;
+
+LoadingScene::~LoadingScene() {}
 
 void LoadingScene::start(core::IContext* ctx)
 {
-	core::Game& game = dynamic_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*ctx);
 	auto ui = ServiceLocator::get<IUIService>();
+
+	loader = new Sprite
+	{
+		.texture = Resources::texture("loader")->id,
+		.blend = BlendMode::Alpha,
+		.size = glm::vec2(128)
+	};
+
+	//glm::vec2 rightBottomScreen{ game.mainCam->viewport().z - loader->size.x, game.mainCam->viewport().w - loader->size.y };
+	glm::vec2 rightBottomScreen{ 0, 0 };
+	loaderTrans = new Transform2D
+	{
+		.position = glm::vec3(rightBottomScreen, 0.0f)
+	};
 }
 
 void LoadingScene::update(core::IContext* ctx, float dt)
 {
 	rot += 360.0f * dt;
-	core::Game& game = dynamic_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*ctx);
+
+	loaderTrans->rotation = rot;
 }
 
 void LoadingScene::draw(core::IContext* ctx)
 {
-	//Change to sprite
-	/*Canvas2D::drawImage("loading", ecs::Transform2D {
-			.scale = glm::vec2(.1f),
-			.rotation = rot,
-		});*/
+	Canvas2D::drawSprite(*loader, *loaderTrans);
+}
+
+void LoadingScene::unload(core::IContext* ctx)
+{
+
 }
 
 void LoadingScene::quit(core::IContext* ctx)
 {
-	core::Game& game = dynamic_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*ctx);
 	auto ui = ServiceLocator::get<IUIService>();
+
+	if(loader)		delete loader;
+	if(loaderTrans) delete loaderTrans;
 }

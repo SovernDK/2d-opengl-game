@@ -28,7 +28,7 @@ const float SPEED = 0.1;
 const float EDGE_BLUR = 0.05;
 
 //Dither
-const highp float NOISE_GRANULARITY = 0.5/255.0;
+const highp float NOISE_GRANULARITY = 0.5 / 255.0;
 highp float random(highp vec2 coords) {
    return fract(sin(dot(coords.xy, vec2(12.9898,78.233))) * 43758.5453);
 }
@@ -43,7 +43,6 @@ float stackedSin()
     return stackedSin;
 }
 
-//Main
 void main()
 {
     vec3 color = vec3(1.0);
