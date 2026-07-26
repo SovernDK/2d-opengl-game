@@ -47,6 +47,7 @@ namespace ecs
 		Entity& add(T&& copyObj);
 
 		Entity& childOf(EntityId parentId);
+		Entity& childOf(Entity& parent);
 
 		template<typename T>
 		const T* const get();
@@ -220,6 +221,12 @@ namespace ecs
 	inline Entity& Entity::childOf(EntityId parentId)
 	{
 		world->setChildOf(parentId, id);
+		return *this;
+	}
+
+	inline Entity& Entity::childOf(Entity& parent)
+	{
+		world->setChildOf(parent.id, id);
 		return *this;
 	}
 

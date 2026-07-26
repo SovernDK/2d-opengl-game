@@ -1,0 +1,7 @@
+title: Snake cult
+content: "{player_name} stay in the entrance to the temple of snake cult."
+choices:
+  - text: Move North
+    goto: Town
+  - text: Move South
+    goto: Snake Temple
