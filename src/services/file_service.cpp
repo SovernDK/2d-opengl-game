@@ -6,7 +6,7 @@
 #include <stb_image_write.h>
 
 #include "services/service_locator.h"
-#include "services/log_service.h"
+#include "debug/logging.h"
 
 #include <fstream>
 #include <filesystem>
@@ -27,9 +27,7 @@ StbiImage FileService::loadFile(const std::string& path, int desiredChannel)
 
     if (!data)
     {
-        std::string errorMsg = std::format("Failed to load stbi file: {} (reason: {})",
-            path, stbi_failure_reason());
-        ServiceLocator::get<ILogger>()->error(CategoryLevel::Files, errorMsg);
+        ErrorLog("File", "Failed to load stbi file: %s (reason: %s)", path.c_str(), stbi_failure_reason());
         img.check = false;
         return img;
     }

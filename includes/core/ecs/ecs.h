@@ -14,7 +14,7 @@
 #include "utility/id_pool.h"
 
 #include "services/service_locator.h"
-#include "services/log_service.h"
+#include "debug/logging.h"
 
 namespace ecs
 {
@@ -299,8 +299,7 @@ namespace ecs
 			return entities.at(id);
 		}
 
-		std::string msg = std::format("Tried to extract entity by non-existent id {}!", id);
-		ServiceLocator::get<ILogger>()->error(CategoryLevel::ECS, msg);
+		ErrorLog("ECS", "Tried to extract entity by non-existent id %d!", id);
 		return entities[0];
 	}
 
@@ -312,8 +311,7 @@ namespace ecs
 			return entities.at(it->second->id);
 		}
 
-		std::string msg = std::format("Tried to extract entity by non-existent handle {}!", handle);
-		ServiceLocator::get<ILogger>()->error(CategoryLevel::ECS, msg);
+		ErrorLog("ECS", "Tried to extract entity by non-existent handle %s!", handle.c_str());
 		return entities[0];
 	}
 
@@ -465,8 +463,7 @@ namespace ecs
 	{
 		if (id == 0)
 		{
-			std::string logMsg = std::format("Cannot add component {} to entity with invalid id 0!", typeid(T).name());
-			ServiceLocator::get<ILogger>()->error(CategoryLevel::ECS, logMsg);
+			ErrorLog("ECS", "Cannot add component %s to entity with invalid id 0!", typeid(T).name());
 			return;
 		}
 
@@ -481,7 +478,7 @@ namespace ecs
 		if (id == 0)
 		{
 			std::string logMsg = std::format("Cannot add component {} to entity with invalid id 0!", typeid(T).name());
-			ServiceLocator::get<ILogger>()->error(CategoryLevel::ECS, logMsg);
+			ErrorLog("ECS", logMsg);
 			return;
 		}
 
@@ -523,8 +520,7 @@ namespace ecs
 			return bucket->items.at(id).get();
 		}
 
-		std::string msg = std::format("Tried to get component {} (for id({}) but it doesn't exist!", typeid(bucket).name(), id);
-		ServiceLocator::get<ILogger>()->error(CategoryLevel::ECS, msg);
+		ErrorLog("ECS", "Tried to get component %s (for id(%d) but it doesn't exist!", typeid(bucket).name(), id);
 		return nullptr;
 	}
 
@@ -537,8 +533,7 @@ namespace ecs
 			return bucket->items.at(id).get();
 		}
 
-		std::string msg = std::format("Tried to get component {} (for id({}) but it doesn't exist!", typeid(bucket).name(), id);
-		ServiceLocator::get<ILogger>()->error(CategoryLevel::ECS, msg);
+		ErrorLog("ECS", "Tried to get component %s (for id(%d) but it doesn't exist!", typeid(bucket).name(), id);
 		return nullptr;
 	}
 

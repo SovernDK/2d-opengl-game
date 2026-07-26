@@ -59,7 +59,6 @@ namespace rmui
 
 		std::shared_ptr<UIWidget> build(const std::string& handle);
 
-		UILabelFactory& setText(std::string text) { m_text = text; return *this; };
 		UILabelFactory& setText(std::string& text) { m_text = text; return *this; };
 
 		UILabelFactory& setAlign(TextAlign align) { m_align = align; return *this; };
@@ -77,7 +76,6 @@ namespace rmui
 
 		std::shared_ptr<UIWidget> build(const std::string& handle);
 
-		UIMultiLabelFactory& setText(std::string text) { m_text = text; return *this; };
 		UIMultiLabelFactory& setText(std::string& text) { m_text = text; return *this; };
 		
 		UIMultiLabelFactory& setAlign(TextAlign align) { m_align = align; return *this; };
@@ -120,8 +118,7 @@ namespace rmui
 		UIButtonFactory& addOnExitHover(const std::function<void(UIWidget*)>& cb) { onExitHover = cb; return *this; }
 
 		UIButtonFactory& setImage(TexID imageId) { m_image = imageId; return *this; };
-		UIButtonFactory& setText(std::string text) { m_text = text; return *this; };
-		UIButtonFactory& setText(std::string& text) { m_text = text; return *this; };
+		UIButtonFactory& setText(const std::string& text) { m_text = text; return *this; };
 
 		UIButtonFactory& setAlign(TextAlign align) { m_align = align; return *this; };
 		UIButtonFactory& setValign(TextVertAlign valign) { m_valign = valign; return *this; };

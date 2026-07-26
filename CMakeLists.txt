@@ -37,6 +37,7 @@ find_package(SDL3_ttf REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(freetype REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 find_package(nlohmann_json REQUIRED)
 find_package(magic_enum REQUIRED)
@@ -91,6 +92,7 @@ target_link_libraries(Renderer PRIVATE
 	imgui::imgui
 	glad::glad
 	Freetype::Freetype
+    yaml-cpp::yaml-cpp
 
     nlohmann_json::nlohmann_json
     magic_enum::magic_enum

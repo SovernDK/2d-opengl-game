@@ -2,6 +2,7 @@
 #include "utility/file_util.h"
 #include "core/resources.h"
 #include "core/config.h"
+#include "debug/logging.h"
 
 #include "services/service_locator.h"
 #include "services/file_service.h"
@@ -58,7 +59,7 @@ std::weak_ptr<ShaderProgram> Resources::loadShader(const string& name)
         return shaders[name];
     }
 
-    ServiceLocator::get<ILogger>()->error(std::format("Couldn't find shader with handle {}", name.c_str()));
+	ErrorLog("Resources", "Couldn't find shader with handle %s", name.c_str());
     return std::weak_ptr<ShaderProgram>();
 }
 
@@ -69,7 +70,7 @@ std::shared_ptr<ShaderProgram> Resources::getStrPtrShader(const string& name)
         return shaders[name];
     }
 
-    ServiceLocator::get<ILogger>()->error(std::format("Couldn't find shader with handle {}", name.c_str()));
+	ErrorLog("Resources", "Couldn't find shader with handle %s", name.c_str());
     return std::shared_ptr<ShaderProgram>();
 }
 
@@ -95,7 +96,7 @@ Texture2D* Resources::loadTexture(const fs::path& path, const std::string& name)
         .setBorderColor(0, 0, 0)
 		.build(img.width, img.height, img.data);
 
-    ServiceLocator::get<ILogger>()->log(std::format("Loaded texture with handle {}", name.c_str()));
+	InfoLog("Resources", "Loaded texture with handle %s", name.c_str());
     textures[name] = std::make_unique<Texture2D>(std::move(texture));
     return textures[name].get();
 }
@@ -111,7 +112,7 @@ Texture2D* Resources::loadTexture(const fs::path& path, const std::string& name,
 
 	Texture2D texture = builder.build(img.width, img.height, img.data);
 
-	ServiceLocator::get<ILogger>()->log(std::format("Loaded texture with handle {}", name.c_str()));
+	InfoLog("Resources", "Loaded texture with handle %s", name.c_str());
 	textures[name] = std::make_unique<Texture2D>(std::move(texture));
 	return textures[name].get();
 }
@@ -123,7 +124,7 @@ Texture2D* Resources::texture(const string& name)
         return textures[name].get();
     }
 
-    ServiceLocator::get<ILogger>()->error(std::format("Couldn't find texture with handle {}", name.c_str()));
+    ErrorLog("Resources", "Couldn't find texture with handle %s", name.c_str());
     return textures[defaultTexture].get();
 }
 
@@ -134,7 +135,7 @@ Texture2D* Resources::texture(TexID id)
 		return p.second->id.id == id.id;
 	});
 
-	ServiceLocator::get<ILogger>()->error(std::format("Couldn't find texture with id {}", id.id));
+	ErrorLog("Resources", "Couldn't find texture with id %s", id.id);
 	return textures[defaultTexture].get();
 }
 
@@ -154,16 +155,14 @@ bool Resources::loadTTFont(const fs::path path, int fontSize)
 	
 	if (!fs::exists(path))
 	{
-        std::string msg = std::format("Font file does not exist: {}", path.string().c_str());
-        ServiceLocator::get<ILogger>()->error(CategoryLevel::TTFFont, msg);
+        ErrorLog("Font", "Font file does not exist: %s", path.string().c_str());
 		return false;
 	}
 
 	FT_Library ft;
 	if (FT_Init_FreeType(&ft))
 	{
-        std::string msg = "ERROR::FREETYPE: Could not init FreeType Library";
-		ServiceLocator::get<ILogger>()->error(CategoryLevel::TTFFont, msg);
+		ErrorLog("Font", "ERROR::FREETYPE: Could not init FreeType Library");
 		return false;
 	}
 
@@ -171,10 +170,8 @@ bool Resources::loadTTFont(const fs::path path, int fontSize)
 	FT_Error err = FT_New_Face(ft, path.string().c_str(), 0, &face);
 	if (err)
 	{
-		std::string msg = std::format(
-			"ERROR::FREETYPE: Failed to load font ({} - size: {}) from: {} [FT error: {}]",
+		ErrorLog("Font", "ERROR::FREETYPE: Failed to load font (%s - size: %d) from: %s [FT error: %s]",
 			fontName, fontSize, path.string(), err);
-        ServiceLocator::get<ILogger>()->error(CategoryLevel::TTFFont, msg);
 		return false;
 	}
 	FT_Set_Pixel_Sizes(face, 0, fontSize);
@@ -182,9 +179,8 @@ bool Resources::loadTTFont(const fs::path path, int fontSize)
 	FT_Error err2 = FT_Load_Char(face, 'X', FT_LOAD_RENDER);
 	if (err2)
 	{
-        std::string msg = std::format("ERROR::FREETYPE: Failed to load Glyph ({} - size: {}) from: {}  [FT error: {}]",
-            fontName.c_str(), fontSize, path.string().c_str(), err2);
-		ServiceLocator::get<ILogger>()->error(CategoryLevel::TTFFont, msg);
+		ErrorLog("Font", "ERROR::FREETYPE: Failed to load Glyph (%s - size: %d) from: %s  [FT error: %s]",
+			fontName.c_str(), fontSize, path.string().c_str(), err2);
 		return false;
 	}
 
@@ -200,7 +196,8 @@ bool Resources::loadTTFont(const fs::path path, int fontSize)
     {
 		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
 		{
-			std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+			WarnLog("Font", "ERROR::FREETYTPE: Failed to load Glyph");
+			//std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
 			continue;
 		}
 
@@ -259,7 +256,7 @@ bool Resources::loadTTFont(const fs::path path, int fontSize)
 	fonts[fontName].size(fontSize)->atlas = glyphTexture.id;
 	saveTexture(std::move(glyphTexture), atlasTextureName);
 
-    ServiceLocator::get<ILogger>()->log(CategoryLevel::TTFFont, std::format("Font {} size: {} loaded succesfully", fontName, fontSize).c_str());
+	InfoLog("Font", "Font %s size: %d loaded succesfully", fontName.c_str(), fontSize);
     delete[] buffer;
 
     return true;
@@ -269,8 +266,7 @@ Font* Resources::font(const std::string& fontName)
 {
     if (!fonts.contains(fontName))
     {
-        std::string msg = std::format("Font \"{}\" doesn't exist!", fontName).c_str();
-		ServiceLocator::get<ILogger>()->log(CategoryLevel::TTFFont, msg);
+		WarnLog("Font", "Font \"%s\" doesn't exist!", fontName.c_str());
 		return &fonts["default"];
     }
     return &fonts[fontName];
@@ -284,16 +280,13 @@ MIX_Audio* Resources::loadClip(const std::filesystem::path& path, const std::str
 	MIX_Audio* audio = MIX_LoadAudio(ServiceLocator::get<IAudioService>()->mixer(), _path, false);
 	if (!audio)
 	{
-		auto msg = std::format("Couldn't open audio file: {}", path.string().c_str());
-		ServiceLocator::get<ILogger>()->error(CategoryLevel::Audio, msg.c_str());
+		ErrorLog("Audio", "Couldn't open audio file: %s", path.string().c_str());
 		SDL_free(_path);
 		return nullptr;
 	}
 	
 	SDL_free(_path);
-
-	auto msg = std::format("Loaded audio clip with handle {}", name.c_str());
-	ServiceLocator::get<ILogger>()->log(CategoryLevel::Audio, msg.c_str());
+	InfoLog("Audio", "Loaded audio clip with handle %s", name.c_str());
 
 	sfx[name] = audio;
 	return audio;
@@ -307,16 +300,13 @@ MIX_Audio* Resources::loadMusic(const std::filesystem::path& path, const std::st
 	MIX_Audio* audio = MIX_LoadAudio(ServiceLocator::get<IAudioService>()->mixer(), _path, false);
 	if (!audio)
 	{
-		auto msg = std::format("Couldn't open music file: {}", path.string().c_str());
-		ServiceLocator::get<ILogger>()->error(CategoryLevel::Audio, msg.c_str());
+		ErrorLog("Audio", "Couldn't open music file: %s", path.string().c_str());
 		SDL_free(_path);
 		return nullptr;
 	}
 
 	SDL_free(_path);
-
-	auto msg = std::format("Loaded music with handle {}", name.c_str());
-	ServiceLocator::get<ILogger>()->log(CategoryLevel::Audio, msg.c_str());
+	InfoLog("Audio", "Loaded music with handle %s", name.c_str());
 
 	music[name] = audio;
 	return audio;

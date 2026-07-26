@@ -14,7 +14,6 @@
 #include "services/ui_service.h"
 #include "services/file_service.h"
 #include "services/input_service.h"
-#include "services/log_service.h"
 #include "services/audio_service.h"
 
 #include "glm/glm.hpp"
@@ -44,7 +43,6 @@ void Game::init(AppState& state)
 {
 	initialized = true;
 #pragma region register services
-	ServiceLocator::registerService<ILogger, LoggerService>();
 	ServiceLocator::registerService<IInputService, InputService>();
 	ServiceLocator::registerService<IFileService, FileService>();
 	ServiceLocator::registerService<ISceneService, SceneService>();
@@ -196,8 +194,6 @@ void Game::quit() const
 {
 	if (initialized)
 	{
-		// Logger saves session to log, add periodic saves not only save on ending
-		ServiceLocator::get<ILogger>()->quit();
 		// Destroy remaining scenes and their dependencies (access to service locator here is still necessary so we clear them)
 		ServiceLocator::get<ISceneService>()->quit();
 

@@ -9,7 +9,7 @@
 
 #include "core/memory/arena.h"
 #include "services/service_locator.h"
-#include "services/log_service.h"
+#include "debug/logging.h"
 #include "graphics/rendering/renderer.h"
 
 #include <memory>
@@ -82,8 +82,7 @@ public:
 		}
 		catch (std::bad_alloc())
 		{
-			std::string errorMsg = std::format("Out of memory trying to allocate {}!", typeid(T).name());
-			ServiceLocator::get<ILogger>()->error(CategoryLevel::Render, errorMsg);
+			ErrorLog("Memory", "Out of memory trying to allocate %s!", typeid(T).name());
 		};
 
 		return ptr;

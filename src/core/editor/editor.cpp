@@ -2,6 +2,7 @@
 #include "editor/editor.h"
 #include "lib/imgui/imgui.h"
 #include "SDL3/SDL_timer.h"
+#include "debug/logging.h"
 
 #include "core/game.h"
 #include "core/profiler.h"

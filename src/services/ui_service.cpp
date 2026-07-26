@@ -336,7 +336,7 @@ rmui::UIWidget* const UIService::widget(int id) const
 		return ids.at(id).get();
 	}
 
-	ServiceLocator::get<ILogger>()->error(std::format("Tried to extract ui widget by non-existent ID ({})!", id).c_str());
+	WarnLog("UI", "Tried to extract ui widget by non-existent ID (%d)!", id);
 	return nullptr;
 }
 
@@ -347,6 +347,6 @@ rmui::UIWidget* const UIService::widget(std::string handle) const
 		return handles.at(handle).get();
 	}
 
-	ServiceLocator::get<ILogger>()->error(std::format("Tried to extract ui widget by non-existent handle ({})!", handle).c_str());
+	WarnLog("UI", "Tried to extract ui widget by non-existent handle (%s)!", handle.c_str());
 	return nullptr;
 }

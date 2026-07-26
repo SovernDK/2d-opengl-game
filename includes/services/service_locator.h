@@ -1,6 +1,7 @@
 #pragma once
 #include "services/service.h"
 #include "SDL3/SDL.h"
+#include "debug/logging.h"
 
 #include <typeindex>
 #include <unordered_map>
@@ -37,7 +38,7 @@ public:
 
 		if (it == services().end())
 		{
-			SDL_Log("\033[31mTried to access service [%s] but it doesn't exist!\033[0m", typeid(T).name());
+			ErrorLog("Service", "Tried to access service[%s] but it doesn't exist!", typeid(T).name());
 			throw std::runtime_error("Tried to access non-existent service");
 			return nullptr;
 		}

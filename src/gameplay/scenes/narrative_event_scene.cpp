@@ -15,9 +15,11 @@
 #include "graphics/rendering/canvas_2d.h"
 
 #include "utility/file_util.h"
+#include "gameplay/historia.h"
 
 using namespace rmui;
 using namespace ecs;
+using namespace historia;
 
 std::shared_ptr<UIWidget> bookWindow, leftPage, rightPage, header, content, choices;
 std::shared_ptr<UIButton> choice1, choice2, choice3;
@@ -66,11 +68,13 @@ void NarrativeEventScene::start(core::IContext* ctx)
 		.setImage(Resources::texture("landscape")->id)
 		.build("right_page_header");
 
+	Story story;
+	story.Load(core::GConfig.data("story.yaml").string());
 	const auto loremIpsum = "Lorem ipsum dolor sit amet, \nconsectetur adipiscing elit. \nQuisque et condimentum augue. \nInteger pharetra eget purus sed tincidunt. \nAliquam a erat nisi.";
 	auto content = ui->createMultiLabel()
 		.setPivot(UIAnchor::Top_Left)
 		.setParent(rightPage)
-		.setText(loremIpsum)
+		.setText(story.events[0].content)
 		.build("right_page_content");
 	
 	// Choices
@@ -80,30 +84,23 @@ void NarrativeEventScene::start(core::IContext* ctx)
 		.setAlpha(0)
 		.build("right_page_choices");
 
-	auto choice1 = ui->createButton()
-		.setStyle("choice_button")
-		.setParent(choices)
-		.setText("Lorem ipsum dolor sit amet")
-		.setAlpha(0)
-		.build("choice1");
+	int i = 0;
+	for (auto& choice : story.events[0].choices)
+	{
+		auto choiceBtn = ui->createButton()
+			.setStyle("choice_button")
+			.setParent(choices)
+			.setText(choice.text)
+			.setAlpha(0)
+			.build("choice_"+i);
 
-	auto choice2 = ui->createButton()
-		.setStyle("choice_button")
-		.setParent(choices)
-		.setText("Quisque et condimentum augue")
-		.setAlpha(0)
-		.build("choice2");
+		i++;
+	}
 
-	auto choice3 = ui->createButton()
-		.setStyle("choice_button")
-		.setParent(choices)
-		.setText("Gallia est omnis divisas in partes tres")
-		.setAlpha(0)
-		.build("choice3");
-
-	choice1->label->play<FadeIn>(0.5f);
-	choice2->label->play<FadeIn>(0.5f);
-	choice3->label->play<FadeIn>(0.5f);
+	for (auto& child : choices->children())
+	{
+		std::static_pointer_cast<UIButton>(child)->label->play<FadeIn>(0.5f);
+	}
 }
 
 void NarrativeEventScene::update(core::IContext* ctx, float dt)

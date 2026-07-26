@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include <glad/glad.h>
+#include "debug/logging.h"
 
 #include "utility/file_util.h"
 #include "graphics/opengl/opengl_impl.h"
@@ -29,14 +30,16 @@ SDL_AppResult Application::Init(void** appState, int argc, char** argv)
 
     bool configLoaded = GConfig.load(file_util::createPath("assets", "data", "config.json"));
     if (!configLoaded) {
-        SDL_Log("Unable to load config! Closing the app.");
+        FatalErrorLog("application", "Unable to load config! Closing the app.");
         return SDL_APP_FAILURE;
     }
+
+    Debug::Init(GConfig.logPath());
 
     bool settingsLoaded = GSettings.load(GConfig.data("settings.json"));
     if (!settingsLoaded)
     {
-		SDL_Log("Unable to load settings! Closing the app.");
+        FatalErrorLog("application", "Unable to load settings! Closing the app.");
 		return SDL_APP_FAILURE;
     }
 
@@ -44,7 +47,7 @@ SDL_AppResult Application::Init(void** appState, int argc, char** argv)
 	bool textLoaded = GTexts.load(GConfig.texts(std::format("{}.{}", language, "json")));
 	if (!textLoaded)
 	{
-		SDL_Log("Unable to load text file! Closing the app.");
+		FatalErrorLog("application", "Unable to load text file! Closing the app.");
 		return SDL_APP_FAILURE;
 	}
 
@@ -60,14 +63,14 @@ SDL_AppResult Application::Init(void** appState, int argc, char** argv)
     bool openGlInit = OpenGLImpl::init(*context, &frameArena);
     if (!openGlInit)
     {
-        SDL_Log("Unable to initialize opengl! Closing the app.");
+		FatalErrorLog("application", "Unable to initialize opengl! Closing the app.");
         return SDL_APP_FAILURE;
     }
 
 	imgui = ImGuiImpl(context->window, context->glContext, "#version 430");
     if(!imgui.init()) {
-        SDL_Log("Failed to initialize ImGui! Closing the app.");
-        return SDL_APP_FAILURE;
+		FatalErrorLog("application", "Failed to initialize ImGui! Closing the app.");
+		return SDL_APP_FAILURE;
     }
 
     game = Game(context->internalWidth, context->internalHeight);
@@ -133,14 +136,15 @@ void Application::Quit(void* appState, SDL_AppResult result)
         {
             SDL_DestroyWindow(context->window);
             context->window = nullptr;
-            SDL_Log("Window destroyed");
+			InfoLog("application", "Window destroyed");
             MIX_Quit();
         }
 
 		delete context;
-		SDL_Log("App context freed");
+		InfoLog("application", "App context freed");
     }
 
+    Debug::Destroy();
     SDL_Quit();
 }
 
@@ -148,7 +152,7 @@ SDL_AppResult Application::initSDL(AppState& context)
 {
     SDL_SetHint(SDL_HINT_IME_IMPLEMENTED_UI, "composition");
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO)) {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Couldn't initialize SDL: %s", SDL_GetError());
+		FatalErrorLog("application", "Couldn't initialize SDL: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
@@ -179,13 +183,13 @@ SDL_AppResult Application::initSDL(AppState& context)
     SDL_DestroyProperties(props);
 
     if (!context.window) {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Couldn't create window: %s", SDL_GetError());
+        FatalErrorLog("application", "Couldn't create window: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
 	if (!MIX_Init())
 	{
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Couldn't init SDL_mixer library: %s", SDL_GetError());
+		FatalErrorLog("application", "Couldn't init sound library: %s", SDL_GetError());
 		return SDL_APP_FAILURE;
 	}
 

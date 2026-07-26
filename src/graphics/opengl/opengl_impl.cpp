@@ -3,6 +3,7 @@
 #include "graphics/opengl/opengl_renderer.h"
 #include "graphics/rendering/canvas_2d.h"
 #include "core/memory/arena.h"
+#include "debug/logging.h"
 
 #include <iostream>
 #include <SDL3/SDL_log.h>
@@ -84,7 +85,7 @@ void OpenGLImpl::quit(core::AppState& context)
     {
         SDL_GL_DestroyContext(context.glContext);
         context.glContext = nullptr;
-        SDL_Log("OpenGL context destroyed");
+        InfoLog("OpenGL", "OpenGL context destroyed");
     }
 
     if (context.activeRenderer)
