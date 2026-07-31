@@ -8,12 +8,12 @@ namespace core {
 class MainMenuScene : public IScene
 {
 public:
-	MainMenuScene(std::string id) : IScene(id) {}
+	MainMenuScene(core::IContext* ctx, std::string id) : IScene(ctx, id) {}
 	~MainMenuScene() override;
 
-	void start(core::IContext* ctx) override;
-	void update(core::IContext* ctx, float dt) override;
-	void draw(core::IContext* ctx) override;
-	void unload(core::IContext* ctx) override;
-	void quit(core::IContext* ctx) override;
+	void start() override;
+	void update(float dt) override;
+	void draw() override;
+	void unload() override;
+	void quit() override;
 };

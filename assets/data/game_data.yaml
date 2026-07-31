@@ -1,0 +1,28 @@
+items:
+  - spear_of_longinus:
+    type: weapon
+
+  - philosopher_stone:
+    type: item
+
+  - sandals:
+    type: armor
+
+  - tunic:
+    type: armor
+
+  - divine_spark:
+    type: item
+    tags: consumable
+
+enemies:
+  - blind_cultist:
+    stats:
+      - MaxHP: 100
+      - Strength: 30
+      - Agility: 30
+      - Spirit: 44
+      - Body: 25
+  - loot_table:
+    - tunic: 1 
+    - philosopher_stone: 1

@@ -76,7 +76,7 @@ namespace rmui
 
 		std::shared_ptr<UIWidget> build(const std::string& handle);
 
-		UIMultiLabelFactory& setText(std::string& text) { m_text = text; return *this; };
+		UIMultiLabelFactory& setText(const std::string& text) { m_text = text; return *this; };
 		
 		UIMultiLabelFactory& setAlign(TextAlign align) { m_align = align; return *this; };
 		UIMultiLabelFactory& setValign(TextVertAlign valign) { m_valign = valign; return *this; };

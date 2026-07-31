@@ -419,13 +419,12 @@ auto choice3 = ui->createButton()
 ```
 
 #### Widget's Animations
+Every animation is put into queue in the order it was called in. Animations are played one after another.
+For simultaneous animations on one widget use CombinedAnimation(WIP).
+
 ```cpp
  // Fade in alpha from 0 to 255 over 1.5 second.
 button->play<FadeIn>(1.5f);
-
-/* Animation will be 2x faster but still retaines 1.5 second time-span which is useful if you added 
-callbacks to the end of animation, also during animation interaction and clipping for widget will be turned off. */
-button->play<FadeIn>(1.5f)->speed(2.0);
 
 /* Callbacks:
 Listener::START, 

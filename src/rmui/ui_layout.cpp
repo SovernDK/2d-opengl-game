@@ -37,7 +37,7 @@ UIRect HorizontalLayout::layout(UIWidget& self, const UIRect& parentRect, int in
 
 	if (fit)
 	{
-		int childrenSize = self.parent.lock()->children().size();
+		int childrenSize = self.parent.lock()->visibleChildren().size();
 		float availableWidth = parentRect.size.x / childrenSize;
 		float defSpacing = spacing * (childrenSize - 1) / childrenSize;
 
@@ -53,7 +53,7 @@ UIRect HorizontalLayout::layout(UIWidget& self, const UIRect& parentRect, int in
 
 	UIRect prevChild{ 0 };
 	int prevChildIndex = index - 1;
-	prevChild = self.parent.lock()->children().at(prevChildIndex)->rect;
+	prevChild = self.parent.lock()->visibleChildren().at(prevChildIndex)->rect;
 
 	float posX = prevChild.pos.x + prevChild.size.x + spacing;
 	float posY = margin.top + parentRect.pos.y;
@@ -74,7 +74,7 @@ UIRect VerticalLayout::layout(UIWidget& self, const UIRect& parentRect, int inde
 	
 	if (fit)
 	{
-		int childrenSize = self.parent.lock()->children().size();
+		int childrenSize = self.parent.lock()->visibleChildren().size();
 		float availableHeight = parentRect.size.y / childrenSize;
 		float defSpacing = spacing * (childrenSize - 1) / childrenSize;
 
@@ -90,7 +90,7 @@ UIRect VerticalLayout::layout(UIWidget& self, const UIRect& parentRect, int inde
 
 	UIRect prevChild{ 0 };
 	int prevChildIndex = index - 1;
-	prevChild = self.parent.lock()->children().at(prevChildIndex)->rect;
+	prevChild = self.parent.lock()->visibleChildren().at(prevChildIndex)->rect;
 
 	float posX = margin.left + parentRect.pos.x;
 	float posY = prevChild.pos.y + prevChild.size.y + spacing;

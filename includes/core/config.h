@@ -6,10 +6,22 @@
 
 #include "utility/file_util.h"
 
+constexpr const char* STORY_FILE_NAME = "story.yaml";
+
 namespace core
 {
     namespace fs = std::filesystem;
     using json = nlohmann::json;
+
+    struct Shaders
+    {
+        std::string def;
+        std::string ui;
+        std::string font;
+		std::string primitive;
+		std::string terrain;
+		std::string screen;
+    };
 
     struct Config
     {
@@ -22,9 +34,7 @@ namespace core
 		fs::path logsDir = "";
 		fs::path textsDir = "";
 
-		std::string defaultShader;
-		std::string uiShader;
-		std::string fontShader;
+        Shaders shaders{};
 
         bool load(const fs::path& file)
         {
@@ -58,10 +68,13 @@ namespace core
 
             if (j.contains("shaders"))
             {
-                auto& shaders = j["shaders"];
-				defaultShader = shaders.value("default", "def");
-				uiShader = shaders.value("ui", "def");
-                fontShader = shaders.value("font", "def");
+                auto& valShaders = j["shaders"];
+				shaders.def = valShaders.value("default", "def");
+				shaders.ui = valShaders.value("ui", "def");
+				shaders.font = valShaders.value("font", "def");
+				shaders.primitive = valShaders.value("primitive", "def");
+				shaders.terrain = valShaders.value("terrain", "def");
+				shaders.screen = valShaders.value("screen", "def");
             }
 
             SDL_Log("\033[33m---- Config Loaded ----\033[0m");
@@ -110,24 +123,24 @@ namespace core
             return file_util::createPath(assetsDir.string(), fontsDir.string(), defaultFontName + ".ttf");
         }
 
-        fs::path data(const std::string& assetName) const
+        fs::path fromData(const std::string& assetName) const
         {
             return file_util::createPath(assetsDir.string(), dataDir.string(), assetName);
         }
 
-		fs::path texts(const std::string& assetName) const
+		fs::path fromTexts(const std::string& assetName) const
 		{
 			return file_util::createPath(assetsDir.string(), textsDir.string(), assetName);
 		}
 
-        fs::path fontDir(const std::string& fontName) const
+        fs::path fromFont(const std::string& fontName) const
         {
             return file_util::createPath(assetsDir.string(), fontsDir.string(), fontName + ".ttf");
         }
 
-		fs::path assetDir(const std::string& asssetName, const std::string ext) const
+		fs::path fromAssets(const std::string& asssetName) const
 		{
-			return file_util::createPath(assetsDir.string(), asssetName + "." + ext);
+			return file_util::createPath(assetsDir.string(), asssetName);
 		}
     };
 

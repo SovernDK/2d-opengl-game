@@ -34,11 +34,14 @@ namespace feel
 
 	struct ICurve
 	{
+		ICurve() = default;
+		virtual ~ICurve() = default;
 		virtual float sample(float t) = 0;
 	};
 
 	struct LinearCurve : public ICurve
 	{
+		LinearCurve() = default;
 		float sample(float t) override
 		{
 			ease::linear(t);
@@ -68,6 +71,7 @@ namespace feel
 
 	struct HillCurve : public ICurve
 	{
+		HillCurve() = default;
 		float sample(float t) override
 		{
 			return std::sin(M_PI * t);

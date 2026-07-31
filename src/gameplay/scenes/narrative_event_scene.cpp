@@ -16,26 +16,23 @@
 
 #include "utility/file_util.h"
 #include "gameplay/historia.h"
+#include <magic_enum/magic_enum.hpp>
 
 using namespace rmui;
 using namespace ecs;
 using namespace historia;
 
-std::shared_ptr<UIWidget> bookWindow, leftPage, rightPage, header, content, choices;
-std::shared_ptr<UIButton> choice1, choice2, choice3;
-
-NarrativeEventScene::~NarrativeEventScene() {}
-
-void NarrativeEventScene::start(core::IContext* ctx)
+void NarrativeEventScene::start()
 {
-	core::Game& game = static_cast<core::Game&>(*ctx);
-	auto ui = ServiceLocator::get<IUIService>();
+	IScene::start();
+	
+	ui = ServiceLocator::get<IUIService>();
 
 	if(!Resources::textureExist("open_book"))
-		Resources::loadTexture(file_util::createPath("assets", "open_book.png").string(), "open_book");
+		Resources::loadTexture(core::GConfig.fromAssets("open_book.png").string(), "open_book");
 	if (!Resources::textureExist("landscape"))
 	{
-		Resources::loadTexture(file_util::createPath("assets", "landscape.png").string(), "landscape");
+		Resources::loadTexture(core::GConfig.fromAssets("landscape.png").string(), "landscape");
 		bgTex = Resources::texture("open_book")->id;
 	}
 
@@ -47,54 +44,57 @@ void NarrativeEventScene::start(core::IContext* ctx)
 		.setAlpha(0)
 		.build("book_window");
 
-	auto leftPage = ui->createWindow()
+	leftPage = ui->createWindow()
 		.setPivot(UIAnchor::Top_Left)
 		.setStyle("page_window")
 		.setParent(bookWindow)
 		.setAlpha(0)
 		.build("left_page_win");
 
-	auto rightPage = ui->createWindow()
+	rightPage = ui->createWindow()
 		.setPivot(UIAnchor::Top_Right)
 		.setStyle("page_window")
 		.setParent(bookWindow)
 		.setAlpha(0)
 		.build("right_page_win");
 
-	auto header = ui->createImage()
+	header = ui->createImage()
 		.setPivot(UIAnchor::Top_Left)
 		.setStyle("page_header")
 		.setParent(rightPage)
 		.setImage(Resources::texture("landscape")->id)
 		.build("right_page_header");
 
-	Story story;
-	story.Load(core::GConfig.data("story.yaml").string());
-	const auto loremIpsum = "Lorem ipsum dolor sit amet, \nconsectetur adipiscing elit. \nQuisque et condimentum augue. \nInteger pharetra eget purus sed tincidunt. \nAliquam a erat nisi.";
-	auto content = ui->createMultiLabel()
+	contentUI = ui->createMultiLabel()
 		.setPivot(UIAnchor::Top_Left)
 		.setParent(rightPage)
-		.setText(story.events[0].content)
+		.setText(m_ctx->story()->currentContent())
 		.build("right_page_content");
 	
 	// Choices
-	auto choices = ui->createWindow()
+	choices = ui->createWindow()
 		.setStyle("page_window")
 		.setParent(rightPage)
 		.setAlpha(0)
 		.build("right_page_choices");
 
-	int i = 0;
-	for (auto& choice : story.events[0].choices)
+	int index = 0;
+	for (auto& direction : m_ctx->story()->currentRoom().directions)
 	{
 		auto choiceBtn = ui->createButton()
 			.setStyle("choice_button")
 			.setParent(choices)
-			.setText(choice.text)
+			.setText(magic_enum::enum_name<EDirection>(direction.dir).data())
 			.setAlpha(0)
-			.build("choice_"+i);
+			.addOnClick([&](UIWidget* widget)
+			{
+				m_ctx->story()->goTo(direction.gotoId);
+				updateRoom = true;
+			})
+			.build("choice");
 
-		i++;
+		directionBtns.push_back(std::move(choiceBtn));
+		index++;
 	}
 
 	for (auto& child : choices->children())
@@ -103,14 +103,81 @@ void NarrativeEventScene::start(core::IContext* ctx)
 	}
 }
 
-void NarrativeEventScene::update(core::IContext* ctx, float dt)
+void NarrativeEventScene::update(float dt)
 {
-	core::Game& game = static_cast<core::Game&>(*ctx);
+	IScene::update(dt);
+
+	if (updateRoom)
+	{
+		contentUI->play<FadeOut>(.25f)->addListener(Listener::EXIT, [&]()
+		{
+			contentUI
+				->tryGetComponent<UIMultilineText>()
+				->setText(m_ctx->story()->currentContent());
+		});
+		contentUI->play<FadeIn>(.25f);
+
+		for (auto& btn : directionBtns)
+		{
+			btn->label->play<FadeOut>(.25f);
+		}
+
+		m_ctx->callback(.25f, [&]()
+		{
+			int index = 0;
+			for (auto& direction : m_ctx->story()->currentRoom().directions)
+			{
+				if (index < directionBtns.size())
+				{
+					directionBtns[index]->setText(magic_enum::enum_name<EDirection>(direction.dir).data());
+					directionBtns[index]->interaction->clearOnClick();
+					directionBtns[index]->interaction->addOnClick([&](UIWidget* widget)
+					{
+						m_ctx->story()->goTo(direction.gotoId);
+						updateRoom = true;
+					});
+					directionBtns[index]->visible = true;
+				}
+				else
+				{
+					auto choiceBtn = ui->createButton()
+						.setStyle("choice_button")
+						.setParent(choices)
+						.setText(magic_enum::enum_name<EDirection>(direction.dir).data())
+						.setAlpha(0)
+						.addOnClick([&](UIWidget* widget)
+						{
+							m_ctx->story()->goTo(direction.gotoId);
+							updateRoom = true;
+						})
+						.build("choice");
+					directionBtns.push_back(choiceBtn);
+				}
+
+				index++;
+			}
+
+			for (int i = index; i < directionBtns.size(); i++)
+			{
+				directionBtns[i]->visible = false;
+			}
+
+			choices->dirtyUpdate();
+
+			for (auto& btn : directionBtns)
+			{
+				if (!btn->visible) continue;
+				btn->label->play<FadeIn>(.25f);
+			}
+		});
+
+		updateRoom = false;
+	}
 }
 
-void NarrativeEventScene::draw(core::IContext* ctx)
+void NarrativeEventScene::draw()
 {
-	core::Game& game = static_cast<core::Game&>(*ctx);
+	IScene::draw();
 
 	Canvas2D::setDepth(BACKGROUND_Z);
 	Canvas2D::setColor(WHITE);
@@ -119,16 +186,15 @@ void NarrativeEventScene::draw(core::IContext* ctx)
 	Canvas2D::reset();
 }
 
-void NarrativeEventScene::unload(core::IContext* ctx)
+void NarrativeEventScene::unload()
 {
-	core::Game& game = static_cast<core::Game&>(*ctx);
-	auto ui = ServiceLocator::get<IUIService>();
+	IScene::unload();
 
 	ui->destroy("book_window");
 }
 
-void NarrativeEventScene::quit(core::IContext* ctx)
+void NarrativeEventScene::quit()
 {
-	core::Game& game = static_cast<core::Game&>(*ctx);
-	auto ui = ServiceLocator::get<IUIService>();
+	IScene::quit();
+
 }

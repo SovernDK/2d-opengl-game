@@ -31,9 +31,9 @@ ecs::EntityId emitterId;
 
 MainMenuScene::~MainMenuScene() {}
 
-void MainMenuScene::start(core::IContext* ctx)
+void MainMenuScene::start()
 {
-	core::Game& game = static_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*m_ctx);
 	auto ui = ServiceLocator::get<IUIService>();
 
 	ServiceLocator::get<IAudioService>()->playMusic("music");
@@ -51,7 +51,7 @@ void MainMenuScene::start(core::IContext* ctx)
 		.setParent(window)
 		.setStyle("mm_button")
 		.setAlpha(0)
-		.setText(GTexts.content["main_menu.new_game"])
+		.setText(GTexts.get("main_menu.new_game"))
 		.build("new_game_btn");
 
 	loadGameBtn = ui->createButton()
@@ -59,7 +59,7 @@ void MainMenuScene::start(core::IContext* ctx)
 		.setParent(window)
 		.setStyle("mm_button")
 		.setAlpha(0)
-		.setText(GTexts.content["main_menu.load_game"])
+		.setText(GTexts.get("main_menu.load_game"))
 		.build("load_game_btn");
 
 	 /*settingsGameBtn = ui->createButton()
@@ -74,31 +74,31 @@ void MainMenuScene::start(core::IContext* ctx)
 		.setParent(window)
 		.setStyle("mm_button")
 		.setAlpha(0)
-		.setText(GTexts.content["main_menu.exit_game"])
+		.setText(GTexts.get("main_menu.exit_game"))
 		.build("exit_game_btn");
 
-	newGameBtn->label->play<FadeIn>(1.7f)->setSpeed(2.0f);
-	loadGameBtn->label->play<FadeIn>(1.7f)->setSpeed(1.5f);
-	exitGameBtn->label->play<FadeIn>(1.7f);
+	newGameBtn->label->play<FadeIn>(0.5f);
+	loadGameBtn->label->play<FadeIn>(0.6f);
+	exitGameBtn->label->play<FadeIn>(0.7f);
 
 	glm::vec2 start{ -50.0f, 0.0f };
-	newGameBtn->play<MoveFrom>(1.1f, start)->setCurve<feel::QuadCurve>(feel::EasingType::Out)->setSpeed(2.0f);
-	loadGameBtn->play<MoveFrom>(1.1f, start)->setCurve<feel::QuadCurve>(feel::EasingType::Out)->setSpeed(1.5f);
-	exitGameBtn->play<MoveFrom>(1.1f, start)->setCurve<feel::QuadCurve>(feel::EasingType::Out);
+	newGameBtn->play<MoveFrom>(0.5f,  glm::vec2{ -50.0f, 0.0f })->setCurve<feel::QuadCurve>(feel::EasingType::Out);
+	loadGameBtn->play<MoveFrom>(0.6f, glm::vec2{ -60.0f, 0.0f })->setCurve<feel::QuadCurve>(feel::EasingType::Out);
+	exitGameBtn->play<MoveFrom>(0.7f, glm::vec2{ -70.0f, 0.0f })->setCurve<feel::QuadCurve>(feel::EasingType::Out);
 
-	const auto& emitterEntity = game.world->create("ParticleEmitter")
+	const auto& emitterEntity = m_ctx->ecsWorld()->create("ParticleEmitter")
 		.add<ecs::ParticleEmitter>({
-			.emiting{ 10.0f },
-			.interval{ 0.2f },
+			.emiting      { 10.0f },
+			.interval     { 0.2f },
 			.texture = Resources::texture("circle")->id,
-			.emitArea{ 10.0f, 960.0f, 1900.0f, 100.0f },
+			.emitArea     { 10.0f, 960.0f, 1900.0f, 100.0f },
 
 			.size = glm::vec2(64.0f),
-			.lifeRange{ 5.0f, 7.0f },
+			.lifeRange    { 5.0f, 7.0f },
 			.startVelocity{ 90.0f, 100.0f },
-			.startScale{ 0.8f, 1.2f },
+			.startScale   { 0.8f, 1.2f },
 
-			.direction{ 0.0f, -1.0f },
+			.direction    { 0.0f, -1.0f },
 
 			.scaleCurve = std::make_unique<feel::HillCurve>(),
 			.alphaCurve = std::make_unique<feel::HillCurve>()
@@ -108,59 +108,59 @@ void MainMenuScene::start(core::IContext* ctx)
 
 	const auto newGameAnimFn = [&](UIWidget* widget)
 	{
-		newGameBtn->label->play<FadeOut>(1.7f)
+		newGameBtn->label->play<FadeOut>(.7f)
 			->setCurve<feel::QuadCurve>(feel::EasingType::In)
 			->addListener(Listener::EXIT, [&]() {
 			ServiceLocator::get<ISceneService>()->requestRemoveLast();
 			ServiceLocator::get<ISceneService>()->requestTransition<NarrativeEventScene>(TransitionMode::Additive);
 		});
 
-		loadGameBtn->label->play<FadeOut>(1.7f)->setCurve<feel::QuadCurve>(feel::EasingType::In)->setSpeed(1.5f);
-		exitGameBtn->label->play<FadeOut>(1.7f)->setCurve<feel::QuadCurve>(feel::EasingType::In)->setSpeed(2.0f);
+		loadGameBtn->label->play<FadeOut>(.6f)->setCurve<feel::QuadCurve>(feel::EasingType::In);
+		exitGameBtn->label->play<FadeOut>(.5f)->setCurve<feel::QuadCurve>(feel::EasingType::In);
 
 		glm::vec2 target{ -50.0f, 0.0f };
-		newGameBtn->play<MoveTo>(1.7f, target)->setCurve<feel::QuadCurve>(feel::EasingType::In);
-		loadGameBtn->play<MoveTo>(1.7f, target)->setCurve<feel::QuadCurve>(feel::EasingType::In)->setSpeed(1.5f);
-		exitGameBtn->play<MoveTo>(1.7f, target)->setCurve<feel::QuadCurve>(feel::EasingType::In)->setSpeed(2.0f);
+		newGameBtn->play<MoveTo>( .7f, glm::vec2{ -70.0f, 0.0f })->setCurve<feel::QuadCurve>(feel::EasingType::In);
+		loadGameBtn->play<MoveTo>(.6f, glm::vec2{ -60.0f, 0.0f })->setCurve<feel::QuadCurve>(feel::EasingType::In);
+		exitGameBtn->play<MoveTo>(.5f, glm::vec2{ -50.0f, 0.0f })->setCurve<feel::QuadCurve>(feel::EasingType::In);
 	};
 
 	newGameBtn->interaction->addOnClick(newGameAnimFn);
 }
 
-void MainMenuScene::update(core::IContext* ctx, float dt)
+void MainMenuScene::update(float dt)
 {
-	core::Game& game = static_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*m_ctx);
 }
 
-void MainMenuScene::draw(core::IContext* ctx)
+void MainMenuScene::draw()
 {
-	core::Game& game = static_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*m_ctx);
 	auto ui = ServiceLocator::get<IUIService>();
 
 	glm::vec4 bg = glm::vec4(0, 0, game.screenWidth, game.screenHeight);
 	auto* mat = Canvas2D::loadToArena<MaterialInstance>(Resources::sharedMat("grad"));
 
-	mat->setProperty("horizontal", false);
+	mat->setProperty("horizontal"  , false);
 	mat->setProperty("upper_color1", color::SDLColorToVec3(Bg1));
 	mat->setProperty("upper_color2", color::SDLColorToVec3(Bg2));
 
 	mat->setProperty("lower_color1", color::SDLColorToVec3(Bg3));
 	mat->setProperty("lower_color2", color::SDLColorToVec3(Bg4));
-	mat->setProperty("time", core::Profiler::instance().getElapsedTime());
+	mat->setProperty(M_PROP_TIME   , core::Profiler::instance().getElapsedTime());
 
 	Canvas2D::drawQuad(bg, mat);
 }
 
-void MainMenuScene::unload(core::IContext* ctx)
+void MainMenuScene::unload()
 {
-	core::Game& game = static_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*m_ctx);
 	auto ui = ServiceLocator::get<IUIService>();
 	
 	ui->destroy("main_menu_window");
-	game.world->destroy(emitterId);
+	m_ctx->ecsWorld()->destroy(emitterId);
 }
 
-void MainMenuScene::quit(core::IContext* ctx)
+void MainMenuScene::quit()
 {
 	window.reset();
 	newGameBtn.reset();

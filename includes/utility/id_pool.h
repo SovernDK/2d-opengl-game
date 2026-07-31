@@ -5,29 +5,41 @@
 template<std::integral T>
 class IdPool
 {
-private:
-	T nextId = 1;
-	std::unordered_set<T> freeIds{};
 public:
-	IdPool() = default;
+	struct Options
+	{
+		T startingId = 1;
+		bool enableRecycle = true;
+	};
+
+private:
+	T nextId;
+	std::unordered_set<T> freeIds{};
+	bool m_enableRecycle;
+
+public:
+	IdPool() : IdPool(Options{}) {}
+
+	explicit IdPool(Options opts)
+		: nextId(opts.startingId), m_enableRecycle(opts.enableRecycle)
+	{}
+
 	IdPool(const IdPool&) = delete;
 	IdPool& operator=(const IdPool&) = delete;
-	IdPool(IdPool&& other) = delete;
-	IdPool& operator=(IdPool&& other) = delete;
-
+	IdPool(IdPool&&) = delete;
+	IdPool& operator=(IdPool&&) = delete;
 	~IdPool() = default;
 
 	T next()
 	{
 		T id = 0;
-		if (!freeIds.empty())
+		if (m_enableRecycle && !freeIds.empty())
 		{
 			auto it = freeIds.begin();
 			id = *it;
 			freeIds.erase(it);
 		}
 		else id = nextId++;
-
 		return id;
 	}
 

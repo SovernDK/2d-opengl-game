@@ -47,7 +47,7 @@
 
     "def_text": {
         "text": {
-            "font": "Canterbury",
+            "font": "BLKCHCRY",
             "size": 32,
             "overflow": "shrink",
             "color": "#000000",
@@ -83,7 +83,7 @@
         },
 
         "text": {
-            "font": "Canterbury",
+            "font": "BLKCHCRY",
             "size": 48,
             "color": "#000000",
             "hoverColor": "#ffffff",
@@ -136,7 +136,7 @@
         },
 
         "text": {
-            "font": "Canterbury",
+            "font": "BLKCHCRY",
             "size": 32,
             "color": "#000000",
             "hoverColor": "#ff0000",

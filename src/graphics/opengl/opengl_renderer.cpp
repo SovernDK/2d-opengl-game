@@ -38,7 +38,7 @@ void OpenGlRenderer::render(ICamera& camera)
 	if (screenMaterial == nullptr)
 	{
 		screenMaterial = new MaterialInstance(Resources::sharedMat("screen"));
-		screenMaterial->setTexture("screenTexture", framebuffer.colorBuffer());
+		screenMaterial->setTexture(M_TEX_RENDER, framebuffer.colorBuffer());
 	}
 
 	framebuffer.bind();
@@ -166,8 +166,8 @@ void OpenGlRenderer::renderImage(ICamera& camera, RenderCommand cmd)
 
 	buffer.startDraw();
 
-	cmd.instance->setProperty("projection", camera.projection());
-	cmd.instance->setProperty("view", camera.view());
+	cmd.instance->setProperty(M_PROP_PROJECTION, camera.projection());
+	cmd.instance->setProperty(M_PROP_VIEW, camera.view());
 	cmd.instance->bind();
 
 	buffer.draw(PrimitiveType::Triangle);
@@ -188,7 +188,7 @@ void OpenGlRenderer::renderPrimitive(ICamera& camera, RenderCommand cmd)
 
 	//glLineWidth(cmd.primitive.lineWidth);
 
-	cmd.instance->setProperty("projection", camera.projection() * camera.view());
+	cmd.instance->setProperty(M_PROP_PROJECTION, camera.projection() * camera.view());
 	cmd.instance->bind();
 
 	PrimitiveType current = PrimitiveType::Line;
@@ -230,7 +230,7 @@ void OpenGlRenderer::renderText(ICamera& camera, RenderCommand cmd)
 	buffer.initBuffer(mesh.vertices.size(), mesh.indices.size());
 	buffer.uploadDynamicData(mesh.vertices, mesh.indices);
 
-	cmd.instance->setProperty("projection", camera.projection());
+	cmd.instance->setProperty(M_PROP_PROJECTION, camera.projection());
 	cmd.instance->bind();
 
 	buffer.startDraw();

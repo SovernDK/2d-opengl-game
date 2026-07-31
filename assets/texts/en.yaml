@@ -1,0 +1,10 @@
+main_menu.new_game: New Game
+main_menu.settings: Settings
+main_menu.load_game: Continue
+main_menu.exit_game: Exit
+
+player_name: Player
+
+entity.silver_sword: "Silver Sword"
+entity.torch: "Torch"
+entity.cult_priest: "Cult Priest"

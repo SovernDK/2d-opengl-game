@@ -27,7 +27,7 @@ void IAnimation::start(UIWidget* widget)
 
 void IAnimation::update(UIWidget* widget, float dt)
 {
-	if (!isPlaying) return;
+	if (!isPlaying) return; // Animation stopped, dont update time;
 	if (!onAnimationUpdateCalls.empty())
 	{
 		for (auto& fn : onAnimationUpdateCalls) fn();
@@ -35,13 +35,18 @@ void IAnimation::update(UIWidget* widget, float dt)
 
 	m_timer.step(dt);
 	ntime = normalizedTime();
+
+	if (m_timer.isTimeout())
+	{
+		isPlaying = false;
+		done = true;
+	}
+
+	if (done) ntime = 1.0f; //Animation done keep time as 1.0 until its not removed
 }
 
 void IAnimation::end(UIWidget* widget)
 {
-	isPlaying = false;
-	done = true;
-
 	if (!onAnimationExitCalls.empty())
 	{
 		for (auto& fn : onAnimationExitCalls) fn();
@@ -75,8 +80,6 @@ float IAnimation::normalizedTime()
 	if (m_curve)
 		t = m_curve->sample(t);
 
-	t *= m_speed;
-
 	return std::clamp(t, 0.0f, 1.0f);
 }
 #pragma endregion IAnimation
@@ -86,28 +89,26 @@ void FadeIn::start(UIWidget* widget)
 {
 	IAnimation::start(widget);
 	startingAlpha = widget->alpha();
+	/*SDL_Log("FadeIn START");
+	SDL_Log("FadeIn animLength: %f", animLength);
+
+	SDL_Log("FadeIn: %f, done = %s", ntime, done ? "true" : "false");*/
 }
 
 void FadeIn::update(UIWidget* widget, float dt)
 {
 	IAnimation::update(widget, dt);
 
-	if (m_timer.isTimeout())
-	{
-		end(widget);
-	}
-	else
-	{
-		float value = (float) MAX_ALPHA * ntime;
-		value = std::clamp(value, 0.0f, 255.0f);
-		uint8_t ivalue = (uint8_t)std::lround(value);
-		widget->setAlpha(ivalue);
-	}
+	float value = (float) MAX_ALPHA * ntime;
+	value = std::clamp(value, 0.0f, 255.0f);
+	uint8_t ivalue = (uint8_t)std::lround(value);
+	widget->setAlpha(ivalue);
+	//SDL_Log("FadeIn: %f, done = %s, setAlpha: %d", ntime, done ? "true" : "false", ivalue);
 }
 
 void FadeIn::end(UIWidget* widget)
 {
-	widget->setAlpha(MAX_ALPHA);
+	//SDL_Log("FadeIn END");
 	IAnimation::end(widget);
 }
 #pragma endregion Fade In
@@ -122,22 +123,14 @@ void FadeOut::update(UIWidget* widget, float dt)
 {
 	IAnimation::update(widget, dt);
 
-	if (m_timer.isTimeout())
-	{
-		end(widget);
-	}
-	else
-	{
-		float value = (float) MAX_ALPHA - (float) (MAX_ALPHA * ntime);
-		value = std::clamp(value, 0.0f, 255.0f);
-		uint8_t ichange = (uint8_t)std::lround(value);
-		widget->setAlpha(ichange);
-	}
+	float value = (float) MAX_ALPHA - (float) (MAX_ALPHA * ntime);
+	value = std::clamp(value, 0.0f, 255.0f);
+	uint8_t ichange = (uint8_t)std::lround(value);
+	widget->setAlpha(ichange);
 }
 
 void FadeOut::end(UIWidget* widget)
 {
-	widget->setAlpha(0);
 	IAnimation::end(widget);
 }
 #pragma endregion Fade Out
@@ -152,23 +145,12 @@ void MoveFrom::update(UIWidget* widget, float dt)
 {
 	IAnimation::update(widget, dt);
 
-	if (m_timer.isTimeout())
-	{
-		end(widget);
-	}
-	else
-	{
-		glm::vec2 change = util_vec::lerp(m_from, glm::vec2(0.0f), ntime);
-		widget->setOffset(change);
-	}
+	glm::vec2 change = util_vec::lerp(m_from, glm::vec2(0.0f), ntime);
+	widget->setOffset(change);
 }
 
 void MoveFrom::end(UIWidget* widget)
 {
-	widget->setOffset(glm::vec2(0.0f));
-	widget->interactive = m_interactive;
-	widget->clipping = true;
-
 	IAnimation::end(widget);
 }
 #pragma endregion Move From
@@ -183,20 +165,12 @@ void MoveTo::update(UIWidget* widget, float dt)
 {
 	IAnimation::update(widget, dt);
 
-	if (m_timer.isTimeout())
-	{
-		end(widget);
-	}
-	else
-	{
-		glm::vec2 change = util_vec::lerp(glm::vec2(0.0f), m_to, ntime);
-		widget->setOffset(change);
-	}
+	glm::vec2 change = util_vec::lerp(glm::vec2(0.0f), m_to, ntime);
+	widget->setOffset(change);
 }
 
 void MoveTo::end(UIWidget* widget)
 {
-	widget->setOffset(m_to);
 	IAnimation::end(widget);
 }
 #pragma endregion Move To

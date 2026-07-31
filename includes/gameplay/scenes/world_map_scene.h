@@ -8,11 +8,11 @@ private:
 	std::future<MapGeneration> mapFuture;
 	std::atomic<bool> mapReady{ false };
 public:
-	WorldMapScene(std::string id) : IScene(id) {}
+	WorldMapScene(core::IContext* ctx, std::string id) : IScene(ctx, id) {}
 
-	void start(core::IContext* ctx) override;
-	void update(core::IContext* ctx, float dt) override;
-	void draw(core::IContext* ctx) override;
-	void unload(core::IContext* ctx) override;
-	void quit(core::IContext* ctx) override;
+	void start() override;
+	void update(float dt) override;
+	void draw() override;
+	void unload() override;
+	void quit() override;
 };

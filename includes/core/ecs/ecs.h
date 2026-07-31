@@ -299,7 +299,7 @@ namespace ecs
 			return entities.at(id);
 		}
 
-		ErrorLog("ECS", "Tried to extract entity by non-existent id %d!", id);
+		WarnLog("ECS", "Tried to extract entity by non-existent id %d!", id);
 		return entities[0];
 	}
 
@@ -311,7 +311,7 @@ namespace ecs
 			return entities.at(it->second->id);
 		}
 
-		ErrorLog("ECS", "Tried to extract entity by non-existent handle %s!", handle.c_str());
+		WarnLog("ECS", "Tried to extract entity by non-existent handle %s!", handle.c_str());
 		return entities[0];
 	}
 

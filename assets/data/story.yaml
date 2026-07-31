@@ -1,7 +1,94 @@
-title: Snake cult
-content: "{player_name} stay in the entrance to the temple of snake cult."
-choices:
-  - text: Move North
-    goto: Town
-  - text: Move South
-    goto: Snake Temple
+config:
+  start: Town
+
+entities:
+  - pc_sarcophagus:
+    name: "entity.pc_sarcophagus"
+    actions:
+      - label: "entity.pc_sarcophagus"
+        effect: { type: show_text, text: "" }
+
+  - silver_sword:
+    name: "entity.silver_sword" ## Name of an entity, use tag from texts/[lang].json
+    actions: ## list of actions possible on this entity
+      - label: "Pick up" ## Action name
+        effect: { type: add_item, ## Action type
+                  item: silver_sword, 
+                  set_flag: has_sword ## sets global flag, use set_loc_flag for room-bound flags
+                }
+      - label: "Inspect" ## Action name
+        effect: { type: show_text, text: "A blade untouched by rust despite its age." }
+
+  - torch:
+    name: "entity.torch"
+    actions: 
+      - label: "Pick up" ## Action name
+        effect: { type: add_item, ## Action type
+                  item: torch, 
+                  set_loc_flag: has_torch ## sets global flag, use set_loc_flag for room-bound flags
+                }
+      - label: "Inspect" ## Action name
+        effect: { type: show_text, text: "" }
+
+  - cult_priest:
+    name: "entity.cult_priest"
+    actions:
+      - label: "Talk to"
+        effect: { type: dialogue, id: priest_intro }
+      - label: "Inspect"
+        effect: { type: show_text, text: "He watches you with unblinking eyes." }
+      - label: "Attack"
+        effect: { type: combat, enemy: cult_priest }
+        requires: { flag: has_sword }
+
+rooms:
+  - title: Tomb Chamber ##Event id must be unique
+    ##Content 
+    ## { ... }                  - Input text from texts/lang.json
+    ## [[ ... ]]                - hyperlink to entity
+    ## [if:flag]...[/if]        - conditional using global flag
+    ## [if:title.flag]...[/if]  - conditional using local flag
+    ## [if_not:flag]...[/if_not] 
+    ## [if_not:title.flag]...[/if_not] 
+    content: > 
+      "You wake up. Head throbbing.[br]
+      Circular burial vault surrounds You.[br]
+      On the floor, stone slab of [[pc_sarcophagus]] lies[br]
+      broken into three pieces."
+    tags: [start]
+    directions: #Allowed movement directions
+      - north: Tomb Antechamber
+
+  - title: Tomb Antechamber
+    content: >
+      "Moonlight seeps through shaft in the ceiling, revealing[br]
+      Corpse leaning agains the wall, a [[item=torch]] in his cold hand.[br]"
+    tags: [darkness]
+    directions:
+      - north: Hall of White Cloth
+      - south: Tomb Chamber
+
+  - title: Hall of White Cloth
+    content: >
+      "Countless niches and alcoves hold mumified remains[br]
+      tightly wrapped with yellow bandages.[br]
+      To the west and east low tunnels extend into darkness.[br]
+      Straight ahead massive stone door covered with runes stands."
+    directions:
+      - north: Underground Garden
+        #flag: has_key
+      - west: Hall of White Cloth West
+      - east: Hall of White Cloth East
+      - south: Tomb Antechamber
+
+  - title: Hall of White Cloth West
+    content: >
+      "Hall of White Cloth West"
+    directions:
+      - east: Hall of White Cloth
+
+  - title: Hall of White Cloth East
+    content: >
+      "Hall of White Cloth East"
+    directions:
+      - west: Hall of White Cloth

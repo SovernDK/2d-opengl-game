@@ -18,9 +18,11 @@
 
 using namespace editor;
 
+bool p_open = false;
+
 void Editor::update(float dt, const ICamera& camera)
 {
-	core::Game& game = dynamic_cast<core::Game&>(m_ctx);
+	core::Game& game = static_cast<core::Game&>(m_ctx);
 
 #pragma region Right Bar
 	float rightBarWidth = (game.screenWidth - camera.viewport().z) / 2;
@@ -43,7 +45,7 @@ void Editor::update(float dt, const ICamera& camera)
 	ImGui::BeginTabBar("Editor#Right Tabs");
 	if (ImGui::BeginTabItem("ECS"))
 	{
-		worldTree(*game.world.get());
+		worldTree(*game.ecsWorld());
 		ImGui::EndTabItem();
 	}
 
@@ -52,8 +54,8 @@ void Editor::update(float dt, const ICamera& camera)
 		uiTree();
 		ImGui::EndTabItem();
 	}
-	ImGui::EndTabBar();
 
+	ImGui::EndTabBar();
 	ImGui::End();
 #pragma endregion Right Bar
 
@@ -69,7 +71,7 @@ void Editor::update(float dt, const ICamera& camera)
 	ImGui::BeginTabBar("Editor#Left Tabs");
 	if (ImGui::BeginTabItem("ECS"))
 	{
-		entityInspector(*game.world.get());
+		entityInspector(*game.ecsWorld());
 		ImGui::EndTabItem();
 	}
 
@@ -81,7 +83,7 @@ void Editor::update(float dt, const ICamera& camera)
 
 	if (ImGui::BeginTabItem("Camera"))
 	{
-		cameraInspector(*game.mainCam.get());
+		cameraInspector(*game.mainCamera());
 		ImGui::EndTabItem();
 	}
 
@@ -120,6 +122,8 @@ void Editor::update(float dt, const ICamera& camera)
 	uiDock();
 	ImGui::End();
 #pragma endregion Bottom Bar
+
+	showEditableTableWindow(&p_open);
 
 #pragma region Center
 
@@ -291,7 +295,7 @@ void Editor::entityInspector(ecs::ECSWorld& world)
 	}
 
 	core::Game& game = dynamic_cast<core::Game&>(m_ctx);
-	ecs::Entity& e = game.world->entity(selectedId);
+	ecs::Entity& e = game.ecsWorld()->entity(selectedId);
 	
 	ImGui::Text("ID: %d", e.id);
 
@@ -463,22 +467,22 @@ void Editor::uiNode(const rmui::UIWidget& widget)
 	if (widget.children().empty())
 		flags |= ImGuiTreeNodeFlags_Leaf;
 
-	bool greyedOut = !widget.visible;
+	/*bool greyedOut = !widget.visible;
 	if (greyedOut)
 	{
 		ImGui::PushStyleColor(
 			ImGuiCol_Text,
 			IM_COL32(120, 120, 120, 255)
 		);
-	}
+	}*/
 
 	if (isSelected) 
 		flags |= ImGuiTreeNodeFlags_Selected;
 
 	if (ImGui::TreeNodeEx(label.c_str(), flags, label.c_str()))
 	{
-		if (greyedOut)
-			ImGui::PopStyleColor();
+		/*if (greyedOut)
+			ImGui::PopStyleColor();*/
 
 		if (ImGui::IsItemClicked())
 			uiSelectedId = widget.id;
@@ -551,6 +555,70 @@ void Editor::uiInspector() const
 	ImGui::SeparatorText("Actions");
 	if (ImGui::Button("Set Dirty"))
 	{
-		selectedWidget->setDirty();
+		selectedWidget->dirtyUpdate();
 	}
+}
+
+struct RowData
+{
+	char name[64];
+	float value;
+	int   count;
+	bool  enabled;
+};
+
+static RowData rows[] = {
+	{ "Alpha", 1.0f, 10, true  },
+	{ "Beta",  2.5f, 20, false },
+	{ "Gamma", 3.3f, 30, true  },
+};
+
+void Editor::showEditableTableWindow(bool* p_open)
+{
+	ImGui::Begin("Editable Table", p_open);
+
+	static ImGuiTableFlags flags =
+		ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+		ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchSame;
+
+	if (ImGui::BeginTable("table_editable", 4, flags))
+	{
+		// Header row
+		ImGui::TableSetupColumn("Name");
+		ImGui::TableSetupColumn("Value");
+		ImGui::TableSetupColumn("Count");
+		ImGui::TableSetupColumn("Enabled");
+		ImGui::TableHeadersRow();
+
+		for (int row = 0; row < IM_ARRAYSIZE(rows); row++)
+		{
+			ImGui::TableNextRow();
+			ImGui::PushID(row); // ensures unique widget IDs per row
+
+			// Name (text input)
+			ImGui::TableSetColumnIndex(0);
+			ImGui::SetNextItemWidth(-FLT_MIN); // fill cell width
+			ImGui::InputText("##name", rows[row].name, IM_ARRAYSIZE(rows[row].name));
+
+			// Value (float input)
+			ImGui::TableSetColumnIndex(1);
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			ImGui::InputFloat("##value", &rows[row].value, 0.0f, 0.0f, "%.2f");
+
+			// Count (int input)
+			ImGui::TableSetColumnIndex(2);
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			ImGui::InputInt("##count", &rows[row].count);
+
+			// Enabled (checkbox)
+			ImGui::TableSetColumnIndex(3);
+			ImGui::Checkbox("##enabled", &rows[row].enabled);
+
+			ImGui::PopID();
+		}
+
+		ImGui::EndTable();
+	}
+
+	ImGui::End();
 }

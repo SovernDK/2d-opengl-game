@@ -163,7 +163,7 @@ void UIService::resizeCanvas(int width, int height)
 	canvasHeight = height;
 
 	m_root->rect = UIRect(0, 0, width, height);
-	m_root->dirtyUpdate = true;
+	m_root->m_dirtyUpdate = true;
 }
 
 void UIService::draw(float dt)
@@ -180,7 +180,7 @@ void UIService::draw(float dt)
 
 void UIService::update()
 {
-	if (m_root->dirtyUpdate)
+	if (m_root->m_dirtyUpdate)
 	{
 		AbsoluteLayout rootStrategy;
 		updateRecursive(m_root.get(), UIRect(0, 0, canvasWidth, canvasHeight), rootStrategy, 0);
@@ -264,10 +264,10 @@ void UIService::updateRecursive(rmui::UIWidget* widget, const UIRect& parentRect
 	widget->rect = strategy.layout(*widget, parentRect, index, false);
 	auto* layoutStrategy = styles[widget->style]->layoutStrategy.get();
 
-	widget->dirtyUpdate = false;
+	widget->m_dirtyUpdate = false;
 
 	int childIndex = 0;
-	for (auto& child : widget->children())
+	for (auto& child : widget->visibleChildren())
 	{
 		updateRecursive(child.get(), widget->rect, *layoutStrategy, childIndex);
 		childIndex++;
@@ -329,7 +329,52 @@ void UIService::destroy(const rmui::UIWidget* widget)
 	destroy(widget);
 }
 
-rmui::UIWidget* const UIService::widget(int id) const
+void UIService::progressAnimations(float dt)
+{
+	for (auto& [_id, stack] : m_animations)
+	{
+		if (stack.empty()) continue;
+
+		rmui::UIWidget* widget = ids[_id].get();
+		auto& animPtr = stack.front();
+
+		if (!widget)
+		{
+			animPtr->end(widget);
+			stack.pop();
+			continue;
+		}
+
+		if (!animPtr->done && !animPtr->isPlaying)
+			animPtr->start(widget);
+		else if (!animPtr->done && animPtr->isPlaying)
+			animPtr->update(widget, dt);
+		
+		if (animPtr->done)
+		{
+			animPtr->end(widget);
+			stack.pop();
+		}
+
+		if (ignoreAnim)
+		{
+			animPtr->end(widget);
+			stack.pop();
+		}
+	}
+
+	std::erase_if(m_animations, [](const auto& animation)
+	{
+		return animation.second.empty();
+	});
+}
+
+void UIService::playAnimation(WidgetID id, std::unique_ptr<rmui::IAnimation> animation)
+{
+	m_animations[id].push(std::move(animation));
+}
+
+UIWidget* const UIService::widget(int id) const
 {
 	if (ids.contains(id))
 	{
@@ -340,7 +385,7 @@ rmui::UIWidget* const UIService::widget(int id) const
 	return nullptr;
 }
 
-rmui::UIWidget* const UIService::widget(std::string handle) const
+UIWidget* const UIService::widget(std::string handle) const
 {
 	if (handles.contains(handle))
 	{

@@ -17,25 +17,36 @@
 #define Bg3		SDL_Color{ 204, 229, 255, 255 }
 #define Bg4		SDL_Color{ 153, 204, 255, 255 }
 
+constexpr const char* M_PROP_MAIN_COLOR = "mainColor";
+constexpr const char* M_PROP_USE_TEX = "useTexture";
+constexpr const char* M_PROP_TIME = "time";
+constexpr const char* M_PROP_PROJECTION = "projection";
+constexpr const char* M_PROP_VIEW = "view";
+constexpr const char* M_PROP_MODEL = "model";
+
+constexpr const char* M_TEX_MAIN = "image";
+constexpr const char* M_TEX_NORMAL = "normal";
+constexpr const char* M_TEX_RENDER = "screenTexture";
+
 namespace gpu
 {
 	struct Vertex
 	{
-		glm::vec3 position	= glm::vec3(0.0f);
-		glm::vec2 uv		= glm::vec2(0.0f);
+		glm::vec3 position = glm::vec3(0.0f);
+		glm::vec2 uv = glm::vec2(0.0f);
 	};
 
 	struct UVRect
 	{
 		float u0 = 0.0f,
-			  v0 = 0.0f, 
-			  u1 = 1.0f, 
-			  v1 = 1.0f;
+			v0 = 0.0f,
+			u1 = 1.0f,
+			v1 = 1.0f;
 
 		UVRect() = default;
 		UVRect(float v) { u0 = v0 = u1 = v1 = v; }
-		UVRect(float u0, float v0, float u1, float v1) 
-		{ 
+		UVRect(float u0, float v0, float u1, float v1)
+		{
 			this->u0 = u0;
 			this->v0 = v0;
 			this->u1 = u1;

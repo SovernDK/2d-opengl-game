@@ -36,7 +36,7 @@ SDL_AppResult Application::Init(void** appState, int argc, char** argv)
 
     Debug::Init(GConfig.logPath());
 
-    bool settingsLoaded = GSettings.load(GConfig.data("settings.json"));
+    bool settingsLoaded = GSettings.load(GConfig.fromData("settings.json"));
     if (!settingsLoaded)
     {
         FatalErrorLog("application", "Unable to load settings! Closing the app.");
@@ -44,10 +44,10 @@ SDL_AppResult Application::Init(void** appState, int argc, char** argv)
     }
 
     std::string language = GSettings.content["language"];
-	bool textLoaded = GTexts.load(GConfig.texts(std::format("{}.{}", language, "json")));
+	bool textLoaded = GTexts.load(GConfig.fromTexts(language + ".yaml"));
 	if (!textLoaded)
 	{
-		FatalErrorLog("application", "Unable to load text file! Closing the app.");
+		FatalErrorLog("application", "Unable to load text file! Closing the app. \n %s", GTexts.error().c_str());
 		return SDL_APP_FAILURE;
 	}
 
@@ -94,7 +94,7 @@ SDL_AppResult Application::Iterate(void* appState)
     game.update(Profiler::instance().getDeltaTime());
     game.draw(Profiler::instance().getDeltaTime());
 
-    context->activeRenderer->render(*game.mainCam.get());
+    context->activeRenderer->render(*game.mainCamera());
 
 	imgui.render();
 

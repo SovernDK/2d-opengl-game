@@ -93,11 +93,11 @@ void editor::WorldMapEditor::render()
 	};
 	ImGui::Unindent();
 
-	ecs::EntityId id = game.world->entity("Settings").id;
+	ecs::EntityId id = game.ecsWorld()->entity("Settings").id;
 
 	if (id != 0)
 	{
-		auto* settings = game.world->getMod<ecs::MapGenSettings>(id);
+		auto* settings = game.ecsWorld()->getMod<ecs::MapGenSettings>(id);
 
 		settings->frequency = frequency;
 		settings->octaves = octaves;

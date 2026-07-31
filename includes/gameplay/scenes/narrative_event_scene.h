@@ -8,18 +8,33 @@ namespace core
 	class Game;
 };
 
+namespace rmui
+{
+	class UIWidget;
+	class UIButton;
+}
+
+class IUIService;
+
 class NarrativeEventScene : public IScene
 {
 private:
 	TexID bgTex{};
 	gpu::UVRect uvs{};
-public:
-	NarrativeEventScene(std::string id) : IScene(id) {}
-	~NarrativeEventScene() override;
+	
+	IUIService* ui;
 
-	void start(core::IContext* ctx) override;
-	void update(core::IContext* ctx, float dt) override;
-	void draw(core::IContext* ctx) override;
-	void unload(core::IContext* ctx) override;
-	void quit(core::IContext* ctx) override;
+	std::shared_ptr<rmui::UIWidget> bookWindow, leftPage, rightPage,
+		header, contentUI, choices;
+	std::vector<std::shared_ptr<rmui::UIButton>> directionBtns;
+
+	bool updateRoom = false;
+public:
+	NarrativeEventScene(core::IContext* ctx, std::string id) : IScene(ctx, id) {}
+
+	void start() override;
+	void update(float dt) override;
+	void draw() override;
+	void unload() override;
+	void quit() override;
 };

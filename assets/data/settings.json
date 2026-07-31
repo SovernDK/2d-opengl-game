@@ -6,7 +6,12 @@
         "internalWidth": 1920,
         "internalHeight": 1080
     },
-
+    "debug": {
+        "editor": {
+            "output": true,
+            "to_file": true
+        }
+    },
     "audio": {
         "audioDeviceId": 0,
         "sfxVolume": 1,

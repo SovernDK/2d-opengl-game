@@ -1,31 +1,68 @@
 #pragma once
 #include <fstream>
-#include <nlohmann/json.hpp>
+#include <yaml-cpp/yaml.h>
 
 #include "utility/file_util.h"
+#include "debug/logging.h"
 
 namespace core
 {
 	namespace fs = std::filesystem;
 
-	struct Texts
+	class Texts
 	{
-		nlohmann::json content;
-
+	private:
+		std::string errorMessage;
+		YAML::Node root;
+	public:
 		bool load(const fs::path& file)
 		{
-			std::ifstream f(file);
-			if (!f.is_open())
-				return false;
 			try
 			{
-				content = nlohmann::json::parse(f);
+				root = YAML::LoadFile(file.string());
 			}
-			catch (const nlohmann::json::parse_error&)
+			catch (const YAML::BadFile& e)
 			{
+				errorMessage = std::string("Failed to open YAML file: ") + e.what();
+				return false;
+			}
+			catch (const YAML::ParserException& e)
+			{
+				errorMessage = std::string("Failed to parse YAML file: ") + e.what();
+				return false;
+			}
+			catch (const YAML::Exception& e)
+			{
+				errorMessage = std::string("YAML error: ") + e.what();
 				return false;
 			}
 			return true;
+		}
+
+		std::string tryGet(const std::string& key, const std::string& fallback)
+		{
+			if (root[key])
+			{
+				return root[key].as<std::string>();
+			}
+			
+			WarnLog("Languages", "Text with key [%s] doesn't exist! Falling back to %s", key.c_str(), fallback.c_str());
+			return fallback;
+		}
+
+		std::string get(const std::string& key)
+		{
+			if (root[key])
+			{
+				return root[key].as<std::string>();
+			}
+
+			ErrorLog("Languages", "Text with key [%s] doesnt exist!", key.c_str());
+		}
+
+		std::string error()
+		{
+			return errorMessage;
 		}
 	};
 

@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <array>
 #include <graphics/material.h>
+#include "memory/flat_map.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -49,7 +50,7 @@ struct FontSize
 struct Font
 {
 	std::vector<std::pair<int, FontSize>> sizes;
-	std::array<Glyph, 128> glyphs;
+	//mem::flat_map<int, FontSize> _sizes;
 
 	void addSize(int size)
 	{

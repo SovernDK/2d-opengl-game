@@ -4,12 +4,12 @@
 class LoadingScene : public IScene
 {
 public:
-	LoadingScene(std::string id) : IScene(id) {}
+	LoadingScene(core::IContext* ctx, std::string id) : IScene(ctx, id) {}
 	~LoadingScene() override;
 
-	void start(core::IContext* ctx) override;
-	void update(core::IContext* ctx, float dt) override;
-	void draw(core::IContext* ctx) override;
-	void unload(core::IContext* ctx) override;
-	void quit(core::IContext* ctx) override;
+	void start() override;
+	void update(float dt) override;
+	void draw() override;
+	void unload() override;
+	void quit() override;
 };

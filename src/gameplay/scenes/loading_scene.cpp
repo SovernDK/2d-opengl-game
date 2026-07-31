@@ -17,9 +17,9 @@ Transform2D* loaderTrans;
 
 LoadingScene::~LoadingScene() {}
 
-void LoadingScene::start(core::IContext* ctx)
+void LoadingScene::start()
 {
-	core::Game& game = static_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*m_ctx);
 	auto ui = ServiceLocator::get<IUIService>();
 
 	loader = new Sprite
@@ -37,27 +37,27 @@ void LoadingScene::start(core::IContext* ctx)
 	};
 }
 
-void LoadingScene::update(core::IContext* ctx, float dt)
+void LoadingScene::update(float dt)
 {
 	rot += 360.0f * dt;
-	core::Game& game = static_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*m_ctx);
 
 	loaderTrans->rotation = rot;
 }
 
-void LoadingScene::draw(core::IContext* ctx)
+void LoadingScene::draw()
 {
 	Canvas2D::drawSprite(*loader, *loaderTrans);
 }
 
-void LoadingScene::unload(core::IContext* ctx)
+void LoadingScene::unload()
 {
 
 }
 
-void LoadingScene::quit(core::IContext* ctx)
+void LoadingScene::quit()
 {
-	core::Game& game = static_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*m_ctx);
 	auto ui = ServiceLocator::get<IUIService>();
 
 	if(loader)		delete loader;

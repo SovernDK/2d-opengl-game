@@ -3,6 +3,7 @@
 
 class Framebuffer
 {
+private:
 	GLuint fbo = 0;
 	GLuint renderTexture = 0;
 
@@ -25,5 +26,5 @@ public:
 	void bind() const;
 	void unbind();
 
-	GLuint colorBuffer() { return renderTexture; }
+	GLuint colorBuffer() const { return renderTexture; }
 };

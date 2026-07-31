@@ -14,62 +14,62 @@ using Depth = int;
 
 namespace ecs
 {
-    struct Transform
-    {
-        glm::vec3 position  = glm::vec3(0.0f);
-        glm::vec3 rotation  = glm::vec3(0.0f);
-        glm::vec3 scale     = glm::vec3(1.0f);
-    };
+	struct Transform
+	{
+		glm::vec3 position  = glm::vec3(0.0f);
+		glm::vec3 rotation  = glm::vec3(0.0f);
+		glm::vec3 scale     = glm::vec3(1.0f);
+	};
 
-    struct Transform2D
-    {
-        glm::vec2 position  = glm::vec2(0.0f);
-        glm::vec2 scale     = glm::vec2(1.0f);
-        float rotation      = 0.0f;
+	struct Transform2D
+	{
+		glm::vec2 position  = glm::vec2(0.0f);
+		glm::vec2 scale     = glm::vec2(1.0f);
+		float rotation      = 0.0f;
 
-        glm::mat4 model(glm::vec2 size) const
-        {
-            glm::vec3 pos = glm::vec3(position, 1.0f);
+		glm::mat4 model(glm::vec2 size) const
+		{
+			glm::vec3 pos = glm::vec3(position, 1.0f);
 
-            float scaledSizeX = scale.x * size.x;
-            float scaledSizeY = scale.y * size.y;
+			float scaledSizeX = scale.x * size.x;
+			float scaledSizeY = scale.y * size.y;
 
-            glm::mat4 model = glm::mat4(1.0f);
+			glm::mat4 model = glm::mat4(1.0f);
 
-            // translate
-            model = glm::translate(model, pos);
+			// translate
+			model = glm::translate(model, pos);
 
-            //rotate around center
+			//rotate around center
 			model = glm::translate(model, glm::vec3(0.5f * scaledSizeX, 0.5f * scaledSizeY, 0.0f));
-            model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-            model = glm::translate(model, glm::vec3(-0.5f * scaledSizeX, -0.5f * scaledSizeY, 0.0f));
+			model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+			model = glm::translate(model, glm::vec3(-0.5f * scaledSizeX, -0.5f * scaledSizeY, 0.0f));
 
-            // scale
-            model = glm::scale(model, glm::vec3(scaledSizeX, scaledSizeY, 1));
+			// scale
+			model = glm::scale(model, glm::vec3(scaledSizeX, scaledSizeY, 1));
 
-            return model;
-        }
-        glm::mat4 model(float w, float h) const
-        {
-            return model(glm::vec2(w, h));
-        }
-    };
+			return model;
+		}
+		glm::mat4 model(float w, float h) const
+		{
+			return model(glm::vec2(w, h));
+		}
+	};
 
-    struct Sprite
-    {
+	struct Sprite
+	{
 		TexID texture{ 0 };
 		BlendMode blend = BlendMode::None;
 
 		gpu::UVRect uv{};
 		glm::vec2 size = glm::vec2(32);
 		SDL_Color color = WHITE;
-        Depth depth = 1;
+		Depth depth = 1;
 
-		MaterialInstance material = MaterialInstance(Resources::sharedMat(core::GConfig.defaultShader));
+		MaterialInstance material = MaterialInstance(Resources::sharedMat(core::GConfig.shaders.def));
 	};
 
-    struct Particle
-    {
+	struct Particle
+	{
 		Timer lifeTime{ 1.0f };
 		glm::vec2 velocity{ 0.0f };
 		glm::vec2 scale{ 1.0f };
@@ -82,8 +82,8 @@ namespace ecs
 		feel::ICurve* colCurve = nullptr;
 	};
 
-    struct ParticleEmitter
-    {
+	struct ParticleEmitter
+	{
 		Timer emiting{ 0.0f };
 		Timer interval{ 0.0f };
 
@@ -108,14 +108,14 @@ namespace ecs
 		std::unique_ptr<feel::ICurve> alphaCurve = std::make_unique<feel::QuadCurve>();
 	};
 
-    struct MapGenSettings
-    {
+	struct MapGenSettings
+	{
 		float frequency = 0.001f;
 		int octaves = 8;
 		float gain = 0.5f;
 		int seed = 1337;
 
-        int width = 1920;
+		int width = 1920;
 		int height = 1080;
 
 		float sunX = 1.1f;
@@ -150,10 +150,58 @@ namespace ecs
 		float waterNormalStr = 0.5f;
 		float waterLevel = 0.36f;
 		float waterSpecSpread = 64.0f;
-    };
+	};
 
 	struct WorldMap
 	{
 
+	};
+
+	struct Player
+	{
+		std::string name = "Player";
+	};
+
+	//Add wounds system which gives different negative effects
+	//Getting 3 wounds = death?
+	struct Wound
+	{
+
+	};
+
+	struct Item
+	{
+		std::string name;
+	};
+
+	struct Inventory
+	{
+		int cap = 10;
+		std::vector<Item> data;
+	};
+
+	struct Attribute
+	{
+		std::string name;
+		float value = 1.0f;
+	};
+
+	struct Stats
+	{
+		Attribute hp;
+		Attribute maxHp;
+
+		float minValue = 1.0f;
+		float maxValue = 100.0f;
+
+		Attribute strength;
+		Attribute agility;
+		Attribute spirit;
+		Attribute body;
+	};
+
+	struct Enemy
+	{
+		std::string name = "Enemy";
 	};
 }

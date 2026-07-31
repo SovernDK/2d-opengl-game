@@ -96,12 +96,12 @@ void Canvas2D::drawSprite(ecs::Sprite& sprite, ecs::Transform2D& transform)
 	if (sprite.blend != BlendMode::None)
 		sprite.material.blendMode = sprite.blend;
 	if (sprite.texture.id != 0)
-		sprite.material.setTexture("image", sprite.texture.id);
+		sprite.material.setTexture(M_TEX_MAIN, sprite.texture.id);
 
-	sprite.material.setProperty("useTexture", sprite.texture.id != 0);
-	sprite.material.setProperty("mainColor", color::SDLColorToVec4(sprite.color));
-	sprite.material.setProperty("model", model);
-	sprite.material.setProperty("time", core::Profiler::instance().getElapsedTime());
+	sprite.material.setProperty(M_PROP_USE_TEX, sprite.texture.id != 0);
+	sprite.material.setProperty(M_PROP_MAIN_COLOR, color::SDLColorToVec4(sprite.color));
+	sprite.material.setProperty(M_PROP_MODEL, model);
+	sprite.material.setProperty(M_PROP_TIME, core::Profiler::instance().getElapsedTime());
 
 	drawMeshWithMaterial(mesh, &sprite.material);
 }
@@ -112,17 +112,17 @@ void Canvas2D::drawImage(const TexID& texture, glm::vec4 rect, gpu::UVRect& uv)
 	Mesh* mesh = loadToArena<Mesh>();
 	mesh->setVerticies(prim.vertices, prim.indices);
 
-	MaterialInstance* material = loadToArena<MaterialInstance>(Resources::sharedMat(core::GConfig.defaultShader));
+	MaterialInstance* material = loadToArena<MaterialInstance>(Resources::sharedMat(core::GConfig.shaders.def));
 	material->blendMode = m_blendMode;
-	material->setProperty("mainColor", color::SDLColorToVec4(m_color));
-	material->setProperty("useTexture", texture.id != 0);
-	material->setTexture("image", texture);
+	material->setProperty(M_PROP_MAIN_COLOR, color::SDLColorToVec4(m_color));
+	material->setProperty(M_PROP_USE_TEX, texture.id != 0);
+	material->setTexture(M_TEX_MAIN, texture);
 
 	ecs::Transform2D transform{ .position = glm::vec3(rect.x, rect.y, 0.0f) };
 	glm::mat4 model = transform.model(glm::vec2(rect.z, rect.w));
-	material->setProperty("model", model);
+	material->setProperty(M_PROP_MODEL, model);
 
-	material->setProperty("time", core::Profiler::instance().getElapsedTime());
+	material->setProperty(M_PROP_TIME, core::Profiler::instance().getElapsedTime());
 
 	drawMeshWithMaterial(mesh, material);
 }
@@ -135,23 +135,23 @@ void Canvas2D::drawQuad(const glm::vec4& rect, MaterialInstance* const mat)
 
 	ecs::Transform2D transform{ .position = glm::vec3(rect.x, rect.y, 0.0f) };
 	glm::mat4 model = transform.model(glm::vec2(rect.z, rect.w));
-	mat->setProperty("model", model);
+	mat->setProperty(M_PROP_MODEL, model);
 
 	drawMeshWithMaterial(mesh, mat);
 }
 
 void Canvas2D::drawText(const std::string_view text, ecs::Transform2D& transform, const std::string_view fontName, int fontSize)
 {
-	MaterialInstance* material = loadToArena<MaterialInstance>(Resources::sharedMat(core::GConfig.fontShader));
+	MaterialInstance* material = loadToArena<MaterialInstance>(Resources::sharedMat(core::GConfig.shaders.font));
 	material->blendMode = BlendMode::Alpha;
 	auto* font = Resources::font(fontName.data());
 
 	if (font->atlas(fontSize).id == 0)
-		Resources::loadTTFont(core::GConfig.fontDir(fontName.data()), fontSize);
+		Resources::loadTTFont(core::GConfig.fromFont(fontName.data()), fontSize);
 	auto* rfont = font->size(fontSize);
 
-	material->setTexture("image", font->size(fontSize)->atlas);
-	material->setProperty("mainColor", color::SDLColorToVec4(m_color));
+	material->setTexture(M_TEX_MAIN, font->size(fontSize)->atlas);
+	material->setProperty(M_PROP_MAIN_COLOR, color::SDLColorToVec4(m_color));
 
 	renderer->commandBuffer->submit(RenderCommand{
 		.type = CommandType::Text,
@@ -173,7 +173,7 @@ glm::vec2 Canvas2D::textSize(const std::string_view text, const std::string_view
 	auto l_fontName = fontName;
 	if (l_fontName.empty())
 		l_fontName = core::GConfig.defaultFontName;
-	std::string path = core::GConfig.fontDir(l_fontName.data()).string();
+	std::string path = core::GConfig.fromFont(l_fontName.data()).string();
 	auto* font = Resources::font(l_fontName.data());
 
 	if (font->atlas(fontSize).id == 0)
@@ -203,7 +203,7 @@ glm::vec2 Canvas2D::textOrigin(const std::string_view text, const std::string_vi
 	if (l_fontName.empty())
 		l_fontName = core::GConfig.defaultFontName;
 
-	std::string path = core::GConfig.fontDir(l_fontName.data()).string();
+	std::string path = core::GConfig.fromFont(l_fontName.data()).string();
 	auto* font = Resources::font(l_fontName.data());
 
 	if (font->atlas(fontSize).id == 0)
@@ -248,7 +248,7 @@ void Canvas2D::drawPrimitive(CommandType primitiveType, Mesh* mesh, float lineWi
 {
 	MaterialInstance* mat = loadToArena<MaterialInstance>(Resources::sharedMat("primitive"));
 	glm::vec4 mainColor = color::SDLColorToVec4(m_color);
-	mat->setProperty("mainColor", mainColor);
+	mat->setProperty(M_PROP_MAIN_COLOR, mainColor);
 
 	renderer->commandBuffer->submit(RenderCommand{
 			.type = primitiveType,

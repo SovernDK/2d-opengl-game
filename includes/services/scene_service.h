@@ -22,6 +22,8 @@ protected:
 
 	virtual void unloadScene() = 0;
 	virtual void addScene(TransitionRequest req) = 0;
+
+	core::IContext* ctx = nullptr;
 public:
 	virtual std::vector<std::shared_ptr<IScene>> activeScenes() = 0;
 public:
@@ -38,7 +40,7 @@ public:
 	template<typename T>
 	void registerScene(std::string name)
 	{
-		registerScene(typeid(T), std::make_shared<T>(name));
+		registerScene(typeid(T), std::make_shared<T>(ctx, name));
 	}
 
 	template<typename T>
@@ -55,7 +57,6 @@ public:
 	std::deque<std::shared_ptr<IScene>> m_activeScenes;
 
 	std::deque<TransitionRequest> pending;
-	core::IContext* ctx = nullptr;
 protected:
 	void requestTransition(const std::type_index& id, const TransitionMode mode) override
 	{
@@ -74,7 +75,7 @@ protected:
 		if (m_activeScenes.empty()) 
 			return;
 
-		m_activeScenes.back()->unload(ctx);
+		m_activeScenes.back()->unload();
 		m_activeScenes.pop_back();
 	}
 
@@ -84,7 +85,7 @@ protected:
 		assert(newScene != nullptr); // Forgot to register scene
 
 		m_activeScenes.push_back(newScene);
-		newScene->start(ctx);
+		newScene->start();
 	}
 public:
 	SceneService() {};
@@ -93,7 +94,7 @@ public:
 	{
 		for (auto& [_, scene] : scenes)
 		{
-			scene->quit(ctx);
+			scene->quit();
 		}
 
 		m_activeScenes.clear();
@@ -122,7 +123,7 @@ public:
 	{
 		for (auto& scene : m_activeScenes)
 		{
-			scene->update(ctx, dt);
+			scene->update(dt);
 		}
 
 		for (auto& request : pending)
@@ -149,7 +150,7 @@ public:
 	{
 		for (auto& scene : m_activeScenes)
 		{
-			scene->draw(ctx);
+			scene->draw();
 		}
 	}
 
@@ -157,7 +158,7 @@ public:
 	{
 		for (auto& [_, scene] : scenes)
 		{
-			scene->quit(ctx);
+			scene->quit();
 		}
 
 		m_activeScenes.clear();

@@ -28,27 +28,28 @@ namespace rmui
 	struct StyleBackground
 	{
 		bool keepAspectRatio = false;
-		TexID texture = 0;
-		SDL_Color color = WHITE;
+		TexID texture        = 0;
+		SDL_Color color      = WHITE;
 		SDL_Color hoverColor = WHITE;
 	};
 
 	struct StyleText
 	{
-		int size = 24;
-		std::string font = "default";
-		SDL_Color color = WHITE;
-		SDL_Color hoverColor = RED;
-		TextAlign align = TextAlign::Left;
-		TextVertAlign valign = TextVertAlign::Top;
+		int size              = 24;
+		std::string font      = "default";
+		SDL_Color color       = WHITE;
+		SDL_Color hoverColor  = RED;
+		TextAlign align       = TextAlign::Left;
+		TextVertAlign valign  = TextVertAlign::Top;
 		TextOverflow overflow = TextOverflow::Ellipsis;
 	};
 
 	struct StyleComponent
 	{
-		std::string name = core::GConfig.defaultShader;
-		uint8_t alpha = 255;
-		std::unique_ptr<ILayoutStrategy> layoutStrategy = nullptr;
+		std::string name   = core::GConfig.shaders.def;
+		uint8_t alpha      = 255;
+		std::unique_ptr<ILayoutStrategy> 
+			layoutStrategy = nullptr;
 
 		StyleBackground back{};
 		StyleText text{};
@@ -60,31 +61,31 @@ namespace rmui
 	class UIWidget
 	{
 	public:
-		WidgetID id = 0;
-		bool dirtyUpdate = false;
+		WidgetID id        = 0;
+		bool m_dirtyUpdate = false;
 
 		UIRect rect{ 0 };
 		UIRect localRect{ 1 };
 
 		glm::vec2 offset{ 0.0f };
-		glm::vec2 pivot = glm::vec2(0.0f);
+		glm::vec2 pivot    = glm::vec2(0.0f);
 
-		uint8_t m_alpha = 255;
+		uint8_t m_alpha    = 255;
 
-		bool visible = true;
-		bool blocking = true;
-		bool interactive = false;
-		bool clipping = true;
+		bool visible       = true;
+		bool blocking      = true;
+		bool interactive   = false;
+		bool clipping      = true;
 
-		std::string style = "default";
+		std::string style  = "default";
 		std::string handle = "";
 
 		std::weak_ptr<UIWidget> parent;
 		std::unique_ptr<UIInteraction> interaction;
+		//
 		std::vector<std::pair<std::type_index, std::unique_ptr<UIComponent>>> components;
 	protected:
 		std::vector<std::shared_ptr<UIWidget>> m_children;
-
 		int animationCount = 0;
 
 		bool uiPtrSet = false;
@@ -106,6 +107,16 @@ namespace rmui
 		}
 
 		const auto& children() const { return m_children; }
+		const auto visibleChildren() const { 
+			std::vector<std::shared_ptr<UIWidget>> visibleOnes;
+			for (auto& child : m_children)
+			{
+				if(child->visible)
+					visibleOnes.push_back(child);
+			}
+
+			return visibleOnes;
+		}
 		void clearChildren() { m_children.clear(); }
 		void addChild(std::shared_ptr<UIWidget> child) { m_children.push_back(child); }
 		void eraseChild(std::shared_ptr<UIWidget> child)
@@ -125,28 +136,28 @@ namespace rmui
 			uiPtrSet = true;
 		}
 
-		void setLocalRect(UIRect rect) { localRect = rect; setDirty(); }
+		void setLocalRect(UIRect rect) { localRect = rect; dirtyUpdate(); }
 
-		void setLocalPosition(glm::vec2 pos) { localRect.pos = pos; setDirty(); }
-		void setLocalPosition(float x, float y) { localRect.pos = glm::vec2(x, y); setDirty(); }
-		void setLocalPosition(UIAnchor pos) { localRect.pos = uiAnchorToVec2(pos); setDirty(); }
+		void setLocalPosition(glm::vec2 pos) { localRect.pos = pos; dirtyUpdate(); }
+		void setLocalPosition(float x, float y) { localRect.pos = glm::vec2(x, y); dirtyUpdate(); }
+		void setLocalPosition(UIAnchor pos) { localRect.pos = uiAnchorToVec2(pos); dirtyUpdate(); }
 
-		void setLocalSize(glm::vec2 size) { localRect.size = size; setDirty(); }
-		void setLocalSize(float width, float height) { localRect.size = glm::vec2(width, height); setDirty(); }
-		void setLocalSize(float size) { localRect.size = glm::vec2(size, size); setDirty(); }
+		void setLocalSize(glm::vec2 size) { localRect.size = size; dirtyUpdate(); }
+		void setLocalSize(float width, float height) { localRect.size = glm::vec2(width, height); dirtyUpdate(); }
+		void setLocalSize(float size) { localRect.size = glm::vec2(size, size); dirtyUpdate(); }
 
 		void setPivot(glm::vec2 p) { pivot = p; /*setDirty();*/ }
 		void setPivot(UIAnchor p) { pivot = uiAnchorToVec2(p);/* setDirty();*/ }
 
-		void setOffset(float x, float y) { this->offset = glm::vec2(x, y); setDirty(); }
-		void setOffset(glm::vec2 offset) { this->offset = offset; setDirty(); }
+		void setOffset(float x, float y) { this->offset = glm::vec2(x, y); dirtyUpdate(); }
+		void setOffset(glm::vec2 offset) { this->offset = offset; dirtyUpdate(); }
 
-		void setDirty()
+		void dirtyUpdate()
 		{
-			dirtyUpdate = true;
+			m_dirtyUpdate = true;
 			if (!parent.expired())
 			{
-				parent.lock()->setDirty();
+				parent.lock()->dirtyUpdate();
 			}
 		}
 
@@ -161,6 +172,9 @@ namespace rmui
 		template<typename TComponent, typename... TArgs>
 		void addComponent(TArgs&&... args);
 
+		template<typename TComponent, typename... TArgs>
+		void setComponent(TArgs&&... args);
+
 		template<typename TComponent>
 		TComponent* tryGetComponent();
 
@@ -172,12 +186,10 @@ namespace rmui
 			if (animationCount > 0)
 			{
 				clipping = false;
-				interactive = false;
 			}
 			else
 			{
 				clipping = true;
-				interactive = true;
 			}
 		}
 	};
@@ -202,6 +214,19 @@ namespace rmui
 		void addOnPressed(const std::function<void(UIWidget*, glm::vec2)>& callback) { onPressedFuncs.push_back(callback); }
 		void addOnEnterHover(const std::function<void(UIWidget*)>& callback) { onEnterHoverFuncs.push_back(callback); }
 		void addOnExitHover(const std::function<void(UIWidget*)>& callback) { onExitHoverFuncs.push_back(callback); }
+
+		void clearAllListeners()
+		{
+			onClickFuncs.clear();
+			onPressedFuncs.clear();
+			onEnterHoverFuncs.clear();
+			onExitHoverFuncs.clear();
+		}
+
+		void clearOnClick()
+		{
+			onClickFuncs.clear();
+		}
 
 		void triggerOnClick(UIWidget* widget)
 		{
@@ -362,7 +387,7 @@ namespace rmui
 		std::vector<std::string> lines;
 		std::vector<std::string_view> views;
 
-		std::string text;
+		//std::string text;
 		std::string font = "default";
 
 		SDL_Color color = BLACK;
@@ -377,24 +402,12 @@ namespace rmui
 
 		UIMultilineText(std::string text) : UIComponent(2)
 		{
-			lines = text::split(text, "\n");
-			views.clear();
-			views.reserve(lines.size());
-			for (auto& line : lines)
-			{
-				views.push_back(line);
-			}
+			setText(text);
 		};
 
 		UIMultilineText(std::string text, const StyleText& style) : UIComponent(2)
 		{
-			lines = text::split(text, "\n");
-			views.clear();
-			views.reserve(lines.size());
-			for (auto& line : lines)
-			{
-				views.push_back(line);
-			}
+			setText(text);
 
 			font = style.font;
 			color = style.color;
@@ -464,6 +477,17 @@ namespace rmui
 		{
 			return ecs::Transform2D{ .position = glm::vec3(textOrigin, 1.0f) };
 		}
+
+		void setText(const std::string& newText)
+		{
+			lines = text::split(newText, "\n");
+			views.clear();
+			views.reserve(lines.size());
+			for (auto& line : lines)
+			{
+				views.push_back(line);
+			}
+		}
 	};
 
 	struct UIBackground : public UIComponent
@@ -485,7 +509,7 @@ namespace rmui
 			color = style.color;
 			hoverColor = style.hoverColor;
 
-			m_sprite.material = Resources::sharedMat(core::GConfig.uiShader);
+			m_sprite.material = Resources::sharedMat(core::GConfig.shaders.ui);
 			m_sprite.material.blendMode = BlendMode::Alpha;
 		};
 
@@ -524,8 +548,8 @@ namespace rmui
 			if (!enabled) return;
 
 			auto material = Canvas2D::loadToArena<MaterialInstance>(Resources::sharedMat("ui"));
-			material->setProperty("mainColor", glm::vec4(glm::vec3(0.0f), 1.0f));
-			material->setProperty("useTexture", false);
+			material->setProperty(M_PROP_MAIN_COLOR, glm::vec4(glm::vec3(0.0f), 1.0f));
+			material->setProperty(M_PROP_USE_TEX, false);
 
 			glm::vec4 shadowRect = widget->rect.renderRect() + glm::vec4(offset, 0.0f, 0.0f);
 			Canvas2D::drawQuad(shadowRect, material);
@@ -540,14 +564,18 @@ namespace rmui
 		UIWidget* label = nullptr;
 	public:
 		UIButton(WidgetID id) : UIWidget(id) {};
+
+		void setText(const std::string& text)
+		{
+			auto* ptr = label->tryGetComponent<UIText>();
+			if (ptr) { ptr->text = text; };
+		}
 	};
 #pragma endregion
 }
 
 class IUIService : public IService
 {
-protected:
-	std::vector<std::pair<WidgetID, std::unique_ptr<rmui::IAnimation>>> m_animations;
 public:
 	IUIService() = default;
 	virtual ~IUIService() = default;
@@ -582,7 +610,7 @@ public:
 
 		std::unique_ptr<rmui::IAnimation> anim = std::make_unique<T>(std::forward<TArgs>(args)...);
 		auto* it = static_cast<T*>(anim.get());
-		m_animations.push_back({ id, std::move(anim) });
+		playAnimation(id, std::move(anim));
 		return it;
 	}
 
@@ -603,6 +631,7 @@ public:
 	virtual rmui::UIMultiLabelFactory createMultiLabel() = 0;
 protected:
 	virtual void initWidget(std::shared_ptr<rmui::UIWidget> widget, const std::string& handle, const std::string& style, const std::shared_ptr<rmui::UIWidget>& parent) = 0;
+	virtual void playAnimation(WidgetID id, std::unique_ptr<rmui::IAnimation> animation) = 0;
 };
 
 #pragma region Implementation
@@ -624,6 +653,20 @@ void rmui::UIWidget::addComponent(TArgs&&... args)
 	{
 		return a.second->priority < b.second->priority;
 	});
+}
+
+template<typename TComponent, typename... TArgs>
+void rmui::UIWidget::setComponent(TArgs&&... args)
+{
+	const std::type_index key = typeid(TComponent);
+
+	auto it = std::find_if(components.begin(), components.end(),
+		[&key](const auto& pair) { return pair.first == key; });
+
+	if (it != components.end())
+		it->second = std::make_unique<TComponent>(std::forward<TArgs>(args)...);
+	else
+		components.emplace_back(key, std::make_unique<TComponent>(std::forward<TArgs>(args)...));
 }
 
 template<typename TComponent>

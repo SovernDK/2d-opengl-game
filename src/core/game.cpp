@@ -20,22 +20,23 @@
 
 #include <glad/glad.h>
 #include <nlohmann/json.hpp>
+#include <scenes/narrative_event_scene.h>
 
 #include "scenes/world_map_scene.h"
 #include "scenes/main_menu_scene.h"
 #include "scenes/loading_scene.h"
 #include "config.h"
 #include "settings.h"
-#include <scenes/narrative_event_scene.h>
 
 using namespace glm;
 using namespace core;
 using namespace rmui;
+using namespace historia;
 
 using json = nlohmann::json;
 using ECSWorld = ecs::ECSWorld;
 
-bool m_editor = false;
+bool is_editor = false;
 
 ecs::CoreSystems* coreSystems = nullptr;
 
@@ -51,30 +52,33 @@ void Game::init(AppState& state)
 #pragma endregion
 
 #pragma region load assets
-	Resources::loadShader("def_vert.glsl", "def_frag.glsl", GConfig.defaultShader);
-	Resources::loadShader("ttf_vert.glsl", "ttf_frag.glsl", GConfig.fontShader);
-	Resources::loadShader("primitive_vert.glsl", "primitive_frag.glsl", "primitive");
-	Resources::loadShader("terrain_vert.glsl", "terrain_frag.glsl", "terrain");
-	Resources::loadShader("ui_vert.glsl", "ui_frag.glsl", GConfig.uiShader);
-	Resources::loadShader("screen_vert.glsl", "screen_frag.glsl", "screen");
-	Resources::loadShader("grad_vert.glsl", "grad_frag.glsl", "grad");
+	Resources::loadShader("def_vert.glsl",       "def_frag.glsl", GConfig.shaders.def);
+	Resources::loadShader("ttf_vert.glsl",       "ttf_frag.glsl", GConfig.shaders.font);
+	Resources::loadShader("primitive_vert.glsl", "primitive_frag.glsl", GConfig.shaders.primitive);
+	Resources::loadShader("terrain_vert.glsl",   "terrain_frag.glsl", GConfig.shaders.terrain);
+	Resources::loadShader("ui_vert.glsl",        "ui_frag.glsl", GConfig.shaders.ui);
+	Resources::loadShader("screen_vert.glsl",    "screen_frag.glsl", GConfig.shaders.screen);
+	Resources::loadShader("grad_vert.glsl",      "grad_frag.glsl", "grad");
 
-	Material def(Resources::getStrPtrShader(GConfig.defaultShader));
-	Material ttf(Resources::getStrPtrShader(GConfig.fontShader));
-	Material ui(Resources::getStrPtrShader(GConfig.uiShader));
-	Material terrain(Resources::getStrPtrShader("terrain"));
-	Material primitive(Resources::getStrPtrShader("primitive"));
-	Material screen(Resources::getStrPtrShader("screen"));
+	Material def(Resources::getStrPtrShader(GConfig.shaders.def));
+	Material ttf(Resources::getStrPtrShader(GConfig.shaders.font));
+	Material ui(Resources::getStrPtrShader(GConfig.shaders.ui));
+	Material terrain(Resources::getStrPtrShader(GConfig.shaders.terrain));
+	Material primitive(Resources::getStrPtrShader(GConfig.shaders.primitive));
+	Material screen(Resources::getStrPtrShader(GConfig.shaders.screen));
 	Material grad(Resources::getStrPtrShader("grad"));
 
-	Resources::addSharedMat(GConfig.defaultShader, std::make_shared<Material>(def));
-	Resources::addSharedMat(GConfig.fontShader, std::make_shared<Material>(ttf));
-	Resources::addSharedMat(GConfig.uiShader, std::make_shared<Material>(ui));
-	Resources::addSharedMat("terrain", std::make_shared<Material>(terrain));
-	Resources::addSharedMat("primitive", std::make_shared<Material>(primitive));
-	Resources::addSharedMat("screen", std::make_shared<Material>(screen));
+	Resources::addSharedMat(GConfig.shaders.def, std::make_shared<Material>(def));
+	Resources::addSharedMat(GConfig.shaders.font, std::make_shared<Material>(ttf));
+	Resources::addSharedMat(GConfig.shaders.ui, std::make_shared<Material>(ui));
+	Resources::addSharedMat(GConfig.shaders.terrain, std::make_shared<Material>(terrain));
+	Resources::addSharedMat(GConfig.shaders.primitive, std::make_shared<Material>(primitive));
+	Resources::addSharedMat(GConfig.shaders.screen, std::make_shared<Material>(screen));
 	Resources::addSharedMat("grad", std::make_shared<Material>(grad));
 #pragma endregion
+	m_story = std::make_unique<Story>();
+	m_story->load(core::GConfig.fromData(STORY_FILE_NAME).string());
+
 	world = std::make_unique<ECSWorld>();
 	world->create("Settings").add<ecs::MapGenSettings>({});
 
@@ -84,7 +88,7 @@ void Game::init(AppState& state)
 
 	mainCam->resize(screenWidth, screenHeight);
 
-	editor = std::make_unique<editor::Editor>(*this);
+	m_editor = std::make_unique<editor::Editor>(*this);
 
 	Resources::loadTexture(file_util::createPath("assets", "default.png").string(),	  "default");
 	Resources::loadTexture(file_util::createPath("assets", "heightmap.png").string(), "heightmap");
@@ -104,7 +108,7 @@ void Game::init(AppState& state)
 	Resources::loadMusic(file_util::createPath("assets", "music", "music.wav").string(), "music");
 
 #pragma region Initialize data
-	json uiData	= ServiceLocator::get<IFileService>()->loadJsonFile(GConfig.data("style.json"));
+	json uiData	= ServiceLocator::get<IFileService>()->loadJsonFile(GConfig.fromData("style.json"));
 
 	ServiceLocator::get<IInputService>()->load(GSettings.content);
 
@@ -125,10 +129,10 @@ void Game::init(AppState& state)
 	coreSystems->init();
 }
 
-void Game::update(float dt) const
+void Game::update(float dt)
 {
-	if(m_editor)
-		editor->update(dt, *mainCam);
+	if(is_editor)
+		m_editor->update(dt, *mainCam);
 
 	glm::vec2 mousePos = ServiceLocator::get<IInputService>()->getMousePos();
 	glm::vec2 convertedMouse = mainCam->pointToViewport(mousePos);
@@ -140,6 +144,7 @@ void Game::update(float dt) const
 	ServiceLocator::get<IInputService>()->reset();
 
 	world->process(dt);
+	processCallbacks(dt);
 }
 
 void Game::input(SDL_Event& e, float dt) const
@@ -152,22 +157,20 @@ void Game::input(SDL_Event& e, float dt) const
 
 	if (e.type == SDL_EVENT_KEY_UP && e.key.key == SDLK_F1)
 	{
-		if (m_editor) 
+		if (is_editor)
 		{
 			resize(screenWidth, screenHeight);
-			m_editor = false;
+			is_editor = false;
 		}
 		else 
 		{
 			resize(screenWidth * 0.7f, screenHeight * 0.7f);
-			m_editor = true;
+			is_editor = true;
 		}
 	}
 
 	if (e.type == SDL_EVENT_KEY_UP && e.key.key == SDLK_F2)
 	{
-		//ServiceLocator::get<ISceneService>()->requestClearAll();
-		//ServiceLocator::get<ISceneService>()->requestRemoveLast();
 		ServiceLocator::get<ISceneService>()->requestTransition<MainMenuScene>(TransitionMode::Replace);
 	}
 
@@ -177,7 +180,7 @@ void Game::input(SDL_Event& e, float dt) const
 void Game::draw(float dt) const
 {
 	if(m_editor)
-		editor->draw();
+		m_editor->draw();
 
 	world->view<ecs::Transform2D, ecs::Sprite>([&](ecs::Entity& entity, ecs::Transform2D& t, ecs::Sprite& s)
 	{
@@ -194,15 +197,36 @@ void Game::quit() const
 {
 	if (initialized)
 	{
-		// Destroy remaining scenes and their dependencies (access to service locator here is still necessary so we clear them)
+		// Destroy remaining scenes and their dependencies 
+		// access to service locator here is still necessary so we clear it first
 		ServiceLocator::get<ISceneService>()->quit();
 
 		ServiceLocator::quit();
 
+		//Temporary
 		delete coreSystems;
+		
 		world->quit();
 		Resources::quit();
 	}
+}
+
+void Game::processCallbacks(const float dt)
+{
+	for (auto& c : callbacks)
+	{
+		c.timer.step(dt);
+
+		if (c.timer.isTimeout())
+		{
+			c.fn();
+		}
+	}
+
+	std::erase_if(callbacks, [](const auto& callback)
+	{
+		return callback.timer.isTimeout();
+	});
 }
 
 void Game::resize(int viewportWidth, int viewportHeight) const

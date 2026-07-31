@@ -11,6 +11,9 @@
     "shaders": {
         "default": "default",
         "ui": "ui",
-        "font": "ttf"
+        "font": "ttf",
+        "primitive": "primitive",
+        "terrain": "terrain",
+        "screen": "screen"
     }
 }

@@ -26,21 +26,21 @@ void initializeWorld(core::Game& game);
 
 using namespace ecs;
 
-void WorldMapScene::start(core::IContext* ctx)
+void WorldMapScene::start()
 {
-	core::Game& game = static_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*m_ctx);
 	auto ui = ServiceLocator::get<IUIService>();
 
-	ecs::EntityId id = game.world->entity("Settings").id;
+	ecs::EntityId id = m_ctx->ecsWorld()->entity("Settings").id;
 	assert(id != 0);
-	const auto* settings = game.world->get<ecs::MapGenSettings>(id);
+	const auto* settings = m_ctx->ecsWorld()->get<ecs::MapGenSettings>(id);
 
 	mapFuture = std::async(std::launch::async, buildMapData, settings);
 }
 
-void WorldMapScene::update(core::IContext* ctx, float dt)
+void WorldMapScene::update(float dt)
 {
-	core::Game& game = static_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*m_ctx);
 	auto ui = ServiceLocator::get<IUIService>();
 
 	if (!mapReady && mapFuture.valid())
@@ -52,8 +52,8 @@ void WorldMapScene::update(core::IContext* ctx, float dt)
 			
 			MapGeneration result = mapFuture.get();
 
-			EntityId id = game.world->entity("Settings").id;
-			auto settings = game.world->get<ecs::MapGenSettings>(id);
+			EntityId id = m_ctx->ecsWorld()->entity("Settings").id;
+			auto settings = m_ctx->ecsWorld()->get<ecs::MapGenSettings>(id);
 
 			applyMapToWorld(game, result, settings->width, settings->height);
 			ServiceLocator::get<ISceneService>()->requestRemoveLast();
@@ -65,40 +65,40 @@ void WorldMapScene::update(core::IContext* ctx, float dt)
 	updateTerrain(game);
 }
 
-void WorldMapScene::draw(core::IContext* ctx)
+void WorldMapScene::draw()
 {
 	
 }
 
-void WorldMapScene::unload(core::IContext* ctx)
+void WorldMapScene::unload()
 {
 
 }
 
-void WorldMapScene::quit(core::IContext* ctx)
+void WorldMapScene::quit()
 {
-	core::Game& game = static_cast<core::Game&>(*ctx);
+	core::Game& game = static_cast<core::Game&>(*m_ctx);
 	auto ui = ServiceLocator::get<IUIService>();
 
-	EntityId id = game.world->entity("WorldMap").id;
+	EntityId id = m_ctx->ecsWorld()->entity("WorldMap").id;
 
 	if (id != 0)
 	{
-		game.world->destroy(id);
+		m_ctx->ecsWorld()->destroy(id);
 	}
 
-	ui->destroy("topbar");
+	/*ui->destroy("topbar");*/
 	mapReady = false;
 }
 
 void initializeWorld(core::Game& game)
 {
-	EntityId id = game.world->entity("Settings").id;
-	auto settings = game.world->get<ecs::MapGenSettings>(id);
+	EntityId id = game.ecsWorld()->entity("Settings").id;
+	auto settings = game.ecsWorld()->get<ecs::MapGenSettings>(id);
 	auto ui = ServiceLocator::get<IUIService>();
 
 	// =========== Entities =======================
-	game.world->create("WorldMap")
+	game.ecsWorld()->create("WorldMap")
 		.add<ecs::WorldMap>({})
 		.add<ecs::Sprite>({
 			.size = glm::vec2(settings->width, settings->height),
@@ -107,15 +107,15 @@ void initializeWorld(core::Game& game)
 			})
 		.add<ecs::Transform2D>({});
 
-	MaterialInstance temp = MaterialInstance(Resources::sharedMat(core::GConfig.defaultShader));
+	MaterialInstance temp = MaterialInstance(Resources::sharedMat(core::GConfig.shaders.def));
 	temp.blendMode = BlendMode::Alpha;
-	temp.setProperty("mainColor", glm::vec4(1.0f));
-	temp.setProperty("useTexture", true);
+	temp.setProperty(M_PROP_MAIN_COLOR, glm::vec4(1.0f));
+	temp.setProperty(M_PROP_USE_TEX, true);
 
 	Texture2D* tex = Resources::texture("triangle");
-	temp.setTexture("image", tex->ID());
+	temp.setTexture(M_TEX_MAIN, tex->ID());
 
-	game.world->create()
+	game.ecsWorld()->create()
 		.add<ecs::Sprite>(ecs::Sprite{
 				.size = glm::vec2(24),
 				.material = temp
@@ -124,7 +124,7 @@ void initializeWorld(core::Game& game)
 				.position = glm::vec3(850, 550, 1.0)
 			});
 
-	game.world->create()
+	game.ecsWorld()->create()
 		.add<ecs::Sprite>(ecs::Sprite{
 				.size = glm::vec2(24),
 				.material = temp
@@ -173,7 +173,7 @@ void applyMapToWorld(core::Game& game, MapGeneration& mapGen, int w, int h)
 	Texture2D* waterNormal = Resources::texture("water_normal3");
 	Texture2D* forestNormal = Resources::texture("forest_normal");
 
-	Entity& worldMapEntity = game.world->entity("WorldMap");
+	Entity& worldMapEntity = game.ecsWorld()->entity("WorldMap");
 	assert(worldMapEntity.id != 0);
 
 	auto& worldMaterial = worldMapEntity.getMod<ecs::Sprite>()->material;
@@ -182,8 +182,8 @@ void applyMapToWorld(core::Game& game, MapGeneration& mapGen, int w, int h)
 
 	updateTerrain(game);
 
-	worldMaterial.setTexture("image", newTex->ID());
-	worldMaterial.setTexture("normal", newNormal->ID());
+	worldMaterial.setTexture(M_TEX_MAIN, newTex->ID());
+	worldMaterial.setTexture(M_TEX_NORMAL, newNormal->ID());
 	worldMaterial.setTexture("waterNormal", waterNormal->ID());
 	worldMaterial.setTexture("moistureMap", newMoisture->ID());
 	worldMaterial.setTexture("forestNormal", forestNormal->ID());
@@ -191,8 +191,8 @@ void applyMapToWorld(core::Game& game, MapGeneration& mapGen, int w, int h)
 
 void updateTerrain(core::Game& game)
 {
-	Entity& worldMapEntity = game.world->entity("WorldMap");
-	Entity& settingsEntity = game.world->entity("Settings");
+	Entity& worldMapEntity = game.ecsWorld()->entity("WorldMap");
+	Entity& settingsEntity = game.ecsWorld()->entity("Settings");
 
 	if (worldMapEntity.id == 0 || settingsEntity.id == 0)
 		return;

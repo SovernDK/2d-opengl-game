@@ -89,6 +89,57 @@ namespace Debug
 		default:                return TRESET;
 		}
 	}
+
+	// Returns true if the user chose to continue, false if they chose to close/quit
+	inline bool ShowErrorDialog(const char* message)
+	{
+		const SDL_MessageBoxButtonData buttons[] = {
+			{
+				SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, // Escape key triggers this
+				0, // buttonid
+				"Close"
+			},
+			{
+				SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, // Enter key triggers this
+				1, // buttonid
+				"Ignore"
+			}
+		};
+
+		const SDL_MessageBoxData messageboxdata = {
+			SDL_MESSAGEBOX_ERROR,      // flags
+			NULL,                      // parent window (or your SDL_Window*)
+			"Error",                   // title
+			message,                   // message
+			SDL_arraysize(buttons),    // numbuttons
+			buttons,                   // buttons
+			NULL                       // colorScheme (NULL = use system default)
+		};
+
+		int buttonid = -1;
+		if (!SDL_ShowMessageBox(&messageboxdata, &buttonid))
+		{
+			// The message box itself failed to show (not a user choice)
+			SDL_Log("Failed to show message box: %s", SDL_GetError());
+			return false; // treat as fatal, since we can't even prompt the user
+		}
+
+		if (buttonid == 0)
+		{
+			SDL_Event quit_event;
+			quit_event.type = SDL_EVENT_QUIT;
+			SDL_PushEvent(&quit_event);
+		}
+
+		if (buttonid == 1)
+		{
+			// User clicked "Ignore"
+			return true;
+		}
+
+		// buttonid == 0, or buttonid == -1 (dialog closed without a choice, e.g. Alt+F4)
+		return false;
+	}
 #pragma endregion Helper functions
 	
 #pragma region Logging
@@ -101,7 +152,7 @@ namespace Debug
 
 	inline void Destroy()
 	{
-		saveToFile("=========== SESSION ENDED ===========");
+		saveToFile("============ SESSION ENDED ============");
 	}
 
 	inline void Log(LogLevel level, const std::string& tag, const std::string& msg,
@@ -124,9 +175,10 @@ namespace Debug
 	inline void Error(const std::string& tag, const std::string& msg,
 		const char* file, const char* funcName, unsigned int lineNum)
 	{
-		//Add message window which will allow to ignore error
-
 		Log(LogLevel::Error, tag, msg, file, funcName, lineNum);
+
+		std::string windowMsg = std::format("{}\n{}\n{} {}", msg, file, funcName, lineNum);
+		ShowErrorDialog(windowMsg.c_str());
 	}
 
 	inline void FatalError(const std::string& tag, const std::string& msg,

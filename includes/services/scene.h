@@ -5,23 +5,28 @@
 
 class IScene
 {
-private:
+protected:
 	std::string m_name;
-	bool started = false;
+	bool started		  = false;
+	core::IContext* m_ctx = nullptr;
 public:
-	IScene(std::string name)
+	IScene(core::IContext* ctx, std::string name)
 	{
 		m_name = name;
+		m_ctx = ctx;
 	}
 	virtual ~IScene() = default;
 	IScene(IScene& other) = delete;
 	IScene& operator=(IScene& other) = delete;
 
-	virtual void start(core::IContext* ctx) { started = true; }
-	virtual void update(core::IContext* ctx, float dt) { if (started) return; }
-	virtual void draw(core::IContext* ctx) { if (started) return; }
-	virtual void unload(core::IContext* ctx) { started = false; }
-	virtual void quit(core::IContext* ctx) { started = false; }
+	virtual void start()
+	{
+		started = true;
+	}
+	virtual void update(float dt) { if (started) return; }
+	virtual void draw() { if (started) return; }
+	virtual void unload() { started = false; }
+	virtual void quit() { started = false; }
 
 	std::string name() const { return m_name; };
 };

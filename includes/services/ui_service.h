@@ -7,6 +7,7 @@
 #include "graphics/graphics.h"
 
 #include <string>
+#include <queue>
 
 #include <nlohmann/json.hpp>
 #include <rmui/ui_layout.h>
@@ -21,16 +22,20 @@ private:
 	std::unordered_map<std::string, std::shared_ptr<rmui::UIWidget>> handles;
 	std::unordered_map<std::string, std::unique_ptr<rmui::StyleComponent>> styles;
 
+	std::unordered_map<WidgetID, std::queue<std::unique_ptr<rmui::IAnimation>>> m_animations;
+
 	std::shared_ptr<rmui::UIWidget> m_root = nullptr;
 	rmui::UIWidget* focused = nullptr;
 	rmui::UIWidget* prevFocused = nullptr;
 
-	int submissionIndex = 100;
+	int submissionIndex = UI_Z;
 	bool isBlocked = false;
 
 	IdPool<WidgetID> idPool;
 	int canvasWidth = 0;
 	int canvasHeight = 0;
+
+	bool ignoreAnim = false;
 public:
 	UIService() = default;
 	~UIService() = default;
@@ -48,35 +53,8 @@ public:
 	void destroy(const std::shared_ptr<rmui::UIWidget>& widget) override;
 	void destroy(const rmui::UIWidget* widget) override;
 
-	void progressAnimations(float dt) override
-	{
-		for (auto& [_id, animPtr] : m_animations)
-		{
-			rmui::UIWidget* widget = ids[_id].get();
-
-			if (!widget)
-			{
-				animPtr->done = true;
-				animPtr->isPlaying = false;
-				continue;
-			}
-
-			if (!animPtr->done && !animPtr->isPlaying)
-				animPtr->start(widget);
-			else if(!animPtr->done && animPtr->isPlaying)
-				animPtr->update(widget, dt);
-		}
-
-		std::erase_if(m_animations, [](const auto& animation)
-		{
-			return animation.second->done;
-		});
-	}
-
-	void clearAnimations() override
-	{
-		m_animations.clear();
-	}
+	void progressAnimations(float dt) override;
+	void clearAnimations() override { m_animations.clear(); }
 
 	rmui::UIWidget* const widget(int id) const override;
 	rmui::UIWidget* const widget(std::string handle) const override;
@@ -135,4 +113,6 @@ private:
 		handles[handle] = widget;
 		ids[widget->id] = widget;
 	}
+
+	void playAnimation(WidgetID id, std::unique_ptr<rmui::IAnimation> animation) override;
 };

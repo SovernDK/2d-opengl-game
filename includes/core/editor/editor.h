@@ -50,6 +50,7 @@ namespace editor
 		void entityInspector(ecs::ECSWorld& world);
 
 		void uiDock();
+		void showEditableTableWindow(bool* p_open);
 
 		void sceneEditor();
 		void stateEditor(std::string currentState);
