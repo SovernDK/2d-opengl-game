@@ -1,7 +1,107 @@
-# opengl-engine-troy
+# 2d opengl game
 2D game engine build with sdl3 and opengl.
 
+# Building 
+## Prerequisites
+
+- [CMake](https://cmake.org/download/) 3.21 or newer
+- [Ninja](https://ninja-build.org/) build system
+- [Git](https://git-scm.com/)
+
+## Setup
+
+### 1. Clone this repository
+
+```powershell
+git clone https://github.com/SovernDK/2d-opengl-game
+cd my-sdl3-project
+```
+
+### 2. Install vcpkg (one-time, machine-wide)
+
+If you don't already have vcpkg installed:
+
+```powershell
+git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+C:\vcpkg\bootstrap-vcpkg.bat
+```
+
+You can install it anywhere — `C:\vcpkg` is just an example. If you already have vcpkg installed somewhere, skip this step and just note the path.
+
+### 3. Point the project at your vcpkg installation
+
+Choose **one** of the following options.
+
+**Option 1 — Environment variable**
+
+Set `MY_VCPKG_ROOT` to your vcpkg installation path:
+
+```powershell
+setx MY_VCPKG_ROOT "C:\vcpkg"
+```
+
+Close and reopen your terminal/IDE for it to take effect, then configure with:
+
+```powershell
+cmake --preset x64-debug
+```
+
+> Note: if you use Visual Studio Developer shells, VS sets its own `VCPKG_ROOT` variable automatically, which can conflict with a manually-set `VCPKG_ROOT`. Using the name `MY_VCPKG_ROOT` avoids this, but if you still run into issues, use Option 2 instead.
+
+**Option 2 — Local override (no env var)**
+
+Create a file named `CMakeUserPresets.json` in the project root (this file is gitignored and personal to your machine):
+
+```json
+{
+	"version": 3,
+	"configurePresets": [
+		{
+			"name": "x64-debug-local",
+			"inherits": "x64-debug",
+			"cacheVariables": {
+				"CMAKE_TOOLCHAIN_FILE": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+			}
+		},
+		{
+			"name": "x64-release-local",
+			"inherits": "x64-release",
+			"cacheVariables": {
+				"CMAKE_TOOLCHAIN_FILE": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+			}
+		}
+	]
+}
+```
+
+Replace `C:/vcpkg/scripts/buildsystems/vcpkg.cmake` with the actual path to your vcpkg installation (use forward slashes).
+
+Then configure with:
+
+```powershell
+cmake --preset x64-debug-local
+```
+
+### 4. Build
+
+```powershell
+cmake --build --preset x64-debug        # if using Option 1
+cmake --build --preset x64-debug-local  # if using Option 2
+```
+
+This automatically downloads and builds all dependencies (SDL3, etc.) as listed in `vcpkg.json` — no manual `vcpkg install` step needed. First-time configure may take a few minutes while dependencies compile.
+
+The compiled binary will be in `out/build/x64-debug/` or `out/build/x64-debug-local/` depending on which option you used.
+
+### Available presets
+
+| Preset | Description |
+|---|---|
+| `x64-debug` / `x64-debug-local` | 64-bit, debug symbols |
+
 ---
+
+# API
 
 ## ECS
 Entity-Component-System which allows use of pure structs as components. 'Child of' relationships are also featured.
@@ -288,42 +388,42 @@ Reset modifiers to default
 Within style.json you can define properties of ui widgets which can be set with .setStyle(...).
 ```cpp
 "my_button": {
-        "background": {
-            "color": "#000000",
-            "hoverColor": "#ffffff"
-        },
+		"background": {
+			"color": "#000000",
+			"hoverColor": "#ffffff"
+		},
 
-        "text": {
-            "font": "Canterbury",
-            "size": 48,
-            "color": "#000000",
-            "hoverColor": "#ffffff",
-            "align": "middle"
-        }
-    }
+		"text": {
+			"font": "Canterbury",
+			"size": 48,
+			"color": "#000000",
+			"hoverColor": "#ffffff",
+			"align": "middle"
+		}
+	}
 ```
 
 You can also set layout strategy for children of Widget
 ```cpp
 "my_window": {
-        "childrenOrigin": "center",
-        "verticalLayout": {
-            "expand": "both",
-            "fit": true,
-            "margin": {
-                "left": 6,
-                "top": 6,
-                "right": 6,
-                "bottom": 6
-            },
-            "spacing": 10
-        },
+		"childrenOrigin": "center",
+		"verticalLayout": {
+			"expand": "both",
+			"fit": true,
+			"margin": {
+				"left": 6,
+				"top": 6,
+				"right": 6,
+				"bottom": 6
+			},
+			"spacing": 10
+		},
 
-        "background": {
-            "color": "#000000",
-            "hoverColor": "#000000"
-        }
-    }
+		"background": {
+			"color": "#000000",
+			"hoverColor": "#000000"
+		}
+	}
 ```
 
 ### Include

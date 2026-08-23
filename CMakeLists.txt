@@ -8,10 +8,6 @@ endif()
 
 project ("Renderer")
 
-if(MSVC)
-	add_compile_options(/Zc:__cplusplus)
-endif()
-
 add_compile_definitions(PROJECT_ROOT_DIR="${CMAKE_SOURCE_DIR}/")
 
 # Add source to this project's executable.
