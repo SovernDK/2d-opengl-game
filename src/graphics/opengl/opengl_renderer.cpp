@@ -162,7 +162,10 @@ void OpenGlRenderer::renderImage(ICamera& camera, RenderCommand cmd)
 {
 	GPUBuffer buffer;
 	buffer.initBuffer(cmd.mesh->vertexCount(), cmd.mesh->indexCount());
-	buffer.uploadStaticData(cmd.mesh->vertices, cmd.mesh->indices);
+	if(cmd.isDynamic)
+		buffer.uploadDynamicData(cmd.mesh->vertices, cmd.mesh->indices);
+	else
+		buffer.uploadStaticData(cmd.mesh->vertices, cmd.mesh->indices);
 
 	buffer.startDraw();
 
@@ -182,7 +185,10 @@ void OpenGlRenderer::renderPrimitive(ICamera& camera, RenderCommand cmd)
 {
 	GPUBuffer buffer;
 	buffer.initBuffer(cmd.mesh->vertexCount(), cmd.mesh->indexCount());
-	buffer.uploadStaticData(cmd.mesh->vertices, cmd.mesh->indices);
+	if (cmd.isDynamic)
+		buffer.uploadDynamicData(cmd.mesh->vertices, cmd.mesh->indices);
+	else
+		buffer.uploadStaticData(cmd.mesh->vertices, cmd.mesh->indices);
 
 	buffer.startDraw();
 
@@ -228,7 +234,10 @@ void OpenGlRenderer::renderText(ICamera& camera, RenderCommand cmd)
 
 	GPUBuffer buffer;
 	buffer.initBuffer(mesh.vertices.size(), mesh.indices.size());
-	buffer.uploadDynamicData(mesh.vertices, mesh.indices);
+	if (cmd.isDynamic)
+		buffer.uploadDynamicData(mesh.vertices, mesh.indices);
+	else
+		buffer.uploadStaticData(mesh.vertices, mesh.indices);
 
 	cmd.instance->setProperty(M_PROP_PROJECTION, camera.projection());
 	cmd.instance->bind();

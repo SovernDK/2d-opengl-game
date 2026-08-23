@@ -45,6 +45,8 @@ namespace core
 		int viewportWidth  = 0,
 			viewportHeight = 0;
 
+		ecs::Entity* m_playerEntity = nullptr;
+
 		mem::Arena* arena;
 	public:
 		Game() = default;
@@ -70,10 +72,11 @@ namespace core
 		};
 		void processCallbacks(const float dt);
 
-		ecs::ECSWorld* ecsWorld() override { return world.get(); }
-		ICamera* mainCamera() override     { return mainCam.get(); }
-		editor::Editor* editor() override  { return m_editor.get(); }
-		historia::Story* story() override  { return m_story.get(); }
+		ecs::ECSWorld* ecsWorld() override	 { return world.get(); }
+		ecs::Entity& playerEntity() override { return *m_playerEntity; };
+		ICamera* mainCamera() override		 { return mainCam.get(); }
+		editor::Editor* editor() override	 { return m_editor.get(); }
+		historia::Story* story() override	 { return m_story.get(); }
 
 		glm::vec2 screenDim() const { return glm::vec2(this->screenWidth, this->screenHeight); }
 		glm::vec2 viewport() const { return glm::vec2(this->viewportWidth, this->viewportHeight); }

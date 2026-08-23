@@ -16,43 +16,58 @@ using json = nlohmann::json;
 
 void UIService::loadStyles(json data)
 {
-	for (auto& [key, val] : data.items())
+	auto headingItems = data["headings"].items();
+	auto stylesItems  = data["styles"].items();
+
+	for (auto& [key, val] : headingItems)
 	{
-		std::unique_ptr<StyleComponent> style = std::make_unique<StyleComponent>();
-		style->name = key;
-		style->alpha = val.value("alpha", 255);
+		auto heading  = std::make_unique<StyleHeading>();
+		heading->font       = val.value("font", "default");
+		heading->size       = val.value("size", 24);
+
+		headings[key] = std::move(heading);
+	}
+
+	for (auto& [key, val] : stylesItems)
+	{
+		auto style = std::make_unique<StyleComponent>();
+		style->name	 = key;
 
 		if (val.contains("background"))
 		{
-			auto& backVal = val["background"];
-
-			auto color = backVal.value("color", "#000000");
-			auto hoverColor = backVal.value("hoverColor", "#000000");
-			auto textureHandle = backVal.value("texture", "0");
+			auto& backVal	   = val["background"];
+							   
+			auto color		    = backVal.value("color",		 "#000000");
+			auto hoverColor		= backVal.value("hoverColor",	 "#000000");
+			auto textureHandle  = backVal.value("texture", "0");
 
 			style->back = rmui::StyleBackground();
 			style->back.keepAspectRatio = backVal.value("keepAspectRatio", false);
 			if(textureHandle != "0")
 				style->back.texture = Resources::texture(textureHandle)->id;
-			style->back.color = HexToRGBA(color, style->alpha);
-			style->back.hoverColor = HexToRGBA(hoverColor, style->alpha);
+
+			style->back.color		= HexToRGB(color);
+			style->back.hoverColor	= HexToRGB(hoverColor);
 		}
 
 		if (val.contains("text"))
 		{
 			auto& textVal = val["text"];
 
-			auto color = textVal.value("color", "#000000");
-			auto hoverColor = textVal.value("hoverColor", "#000000");
-			auto textOverflow = textVal.value("overflow", "ellipsis");
-			auto textAlign = textVal.value("align", "left");
-			auto vtextAlign = textVal.value("valign", "top");
+			auto color         = textVal.value("color", "#000000");
+			auto hoverColor    = textVal.value("hoverColor", "#000000");
+			auto disabledColor = textVal.value("disabledColor", "#000000");
+			auto textOverflow  = textVal.value("overflow", "ellipsis");
+			auto textAlign     = textVal.value("align", "left");
+			auto vtextAlign    = textVal.value("valign", "top");
 
 			style->text = rmui::StyleText();
-			style->text.font = textVal.value("font", "default");
-			style->text.size = textVal.value("size", 24);
-			style->text.color = HexToRGBA(color, style->alpha);
-			style->text.hoverColor = HexToRGBA(hoverColor, style->alpha);
+			
+			auto h = textVal.value("heading", "normal");
+			style->text.heading			= std::make_unique<StyleHeading>(heading(h));
+			style->text.color			= HexToRGB(color);
+			style->text.hoverColor		= HexToRGB(hoverColor);
+			style->text.disabledColor	= HexToRGB(disabledColor);
 
 			style->text.overflow = magic_enum::enum_cast<TextOverflow>(textOverflow, magic_enum::case_insensitive)
 				.value_or(TextOverflow::Ellipsis);
@@ -65,16 +80,15 @@ void UIService::loadStyles(json data)
 		if (val.contains("horizontalLayout"))
 		{
 			Margin margin{ 0 };
-			margin.left		= val["horizontalLayout"]["margin"].value("left", 0);
-			margin.right	= val["horizontalLayout"]["margin"].value("right", 0);
-			margin.top		= val["horizontalLayout"]["margin"].value("top", 0);
-			margin.bottom	= val["horizontalLayout"]["margin"].value("bottom", 0);
+			margin.left	  = val["horizontalLayout"]["margin"].value("left",	  0);
+			margin.right  = val["horizontalLayout"]["margin"].value("right",  0);
+			margin.top	  = val["horizontalLayout"]["margin"].value("top",	  0);
+			margin.bottom = val["horizontalLayout"]["margin"].value("bottom", 0);
 
 			std::unique_ptr<HorizontalLayout> layout = std::make_unique<HorizontalLayout>();
 
 			layout->margin	= margin;
 			layout->spacing = val["horizontalLayout"].value("spacing", 0);
-			//layout->expand = val["horizontalLayout"].value("expand", false);
 
 			auto expand = val["horizontalLayout"]["margin"].value("expand", "both");
 			layout->expand = magic_enum::enum_cast<Expand>(expand, magic_enum::case_insensitive)
@@ -87,10 +101,10 @@ void UIService::loadStyles(json data)
 		else if (val.contains("verticalLayout"))
 		{
 			Margin margin{ 0 };
-			margin.left		= val["verticalLayout"]["margin"].value("left", 0);
-			margin.right	= val["verticalLayout"]["margin"].value("right", 0);
-			margin.top		= val["verticalLayout"]["margin"].value("top", 0);
-			margin.bottom	= val["verticalLayout"]["margin"].value("bottom", 0);
+			margin.left	  = val["verticalLayout"]["margin"].value("left",	0);
+			margin.right  = val["verticalLayout"]["margin"].value("right",	0);
+			margin.top	  = val["verticalLayout"]["margin"].value("top",	0);
+			margin.bottom = val["verticalLayout"]["margin"].value("bottom", 0);
 
 			style->layoutStrategy = std::make_unique<VerticalLayout>();
 
@@ -98,8 +112,7 @@ void UIService::loadStyles(json data)
 
 			layout->margin	= margin;
 			layout->spacing = val["verticalLayout"].value("spacing", 0);
-			
-			//layout->expand	= val["verticalLayout"].value("expand", false);
+
 			auto expand = val["verticalLayout"]["margin"].value("expand", "both");
 			layout->expand = magic_enum::enum_cast<Expand>(expand, magic_enum::case_insensitive)
 				.value_or(Expand::None);
@@ -115,9 +128,9 @@ void UIService::loadStyles(json data)
 
 		if (val.contains("dropShadow"))
 		{
-			style->dropShadow		= val["dropShadow"].get<bool>();
-			style->shadowOffset.x	= val["shadowOffset"].value("x", 1);
-			style->shadowOffset.y	= val["shadowOffset"].value("y", 1);
+			style->dropShadow	  = val["dropShadow"].get<bool>();
+			style->shadowOffset.x = val["shadowOffset"].value("x", 1);
+			style->shadowOffset.y = val["shadowOffset"].value("y", 1);
 		}
 
 		styles[key] = std::move(style);
@@ -126,18 +139,8 @@ void UIService::loadStyles(json data)
 
 void UIService::realizeStyle(rmui::UIWidget& widget, float dt)
 {
-	auto it = styles.find(widget.style);
-	if (it == styles.end() || !it->second)
-	{
-		SDL_Log("Style '%s' not found for widget with id %d, using default style", widget.style.c_str(), widget.id);
-		return;
-	}
-	auto& style = *it->second;
-
 	for (auto& [_, comp] : widget.components)
-	{
 		comp->realize(&widget);
-	}
 
 	Canvas2D::reset();
 }
@@ -147,11 +150,10 @@ void UIService::init(int width, int height)
 	canvasWidth	 = width;
 	canvasHeight = height;
 
-	m_root = std::make_shared<rmui::UIWidget>(idPool.next());
+	m_root = std::make_shared<rmui::UIWidget>(idPool.next(), *styles["root"]);
 	m_root->rect = UIRect(0, 0, canvasWidth, canvasHeight);
 	m_root->setLocalPosition(0.0f, 0.0f);
 	m_root->setLocalSize(1.0f, 1.0f);
-	m_root->style = "root";
 
 	ids[m_root->id] = m_root;
 	handles["root"] = m_root;
@@ -227,6 +229,7 @@ void UIService::drawRecursive(rmui::UIWidget* widget, const glm::vec4 parentClip
 
 	if (!widget->visible) return;
 
+	Canvas2D::setDepth(submissionIndex++);
 	realizeStyle(*widget, dt);
 
 	glm::vec4 prevClip = parentClip;
@@ -249,7 +252,6 @@ void UIService::drawRecursive(rmui::UIWidget* widget, const glm::vec4 parentClip
 
 	Canvas2D::setIsClipping(widget->clipping);
 	Canvas2D::setClipping(currentClip);
-	Canvas2D::setDepth(submissionIndex++);
 
 	for (auto& child : widget->children())
 	{
@@ -262,14 +264,12 @@ void UIService::drawRecursive(rmui::UIWidget* widget, const glm::vec4 parentClip
 void UIService::updateRecursive(rmui::UIWidget* widget, const UIRect& parentRect, ILayoutStrategy& strategy, int index)
 {
 	widget->rect = strategy.layout(*widget, parentRect, index, false);
-	auto* layoutStrategy = styles[widget->style]->layoutStrategy.get();
-
 	widget->m_dirtyUpdate = false;
 
 	int childIndex = 0;
 	for (auto& child : widget->visibleChildren())
 	{
-		updateRecursive(child.get(), widget->rect, *layoutStrategy, childIndex);
+		updateRecursive(child.get(), widget->rect, *widget->m_style.layoutStrategy.get(), childIndex);
 		childIndex++;
 	}
 }
@@ -374,24 +374,24 @@ void UIService::playAnimation(WidgetID id, std::unique_ptr<rmui::IAnimation> ani
 	m_animations[id].push(std::move(animation));
 }
 
-UIWidget* const UIService::widget(int id) const
+std::weak_ptr<rmui::UIWidget> const UIService::widget(int id) const
 {
 	if (ids.contains(id))
 	{
-		return ids.at(id).get();
+		return ids.at(id);
 	}
 
 	WarnLog("UI", "Tried to extract ui widget by non-existent ID (%d)!", id);
-	return nullptr;
+	return std::weak_ptr<rmui::UIWidget>();
 }
 
-UIWidget* const UIService::widget(std::string handle) const
+std::weak_ptr<rmui::UIWidget> const UIService::widget(std::string handle) const
 {
 	if (handles.contains(handle))
 	{
-		return handles.at(handle).get();
+		return handles.at(handle);
 	}
 
 	WarnLog("UI", "Tried to extract ui widget by non-existent handle (%s)!", handle.c_str());
-	return nullptr;
+	return std::weak_ptr<rmui::UIWidget>();
 }

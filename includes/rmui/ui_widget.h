@@ -19,6 +19,7 @@ namespace rmui
 	class UIImageFactory;
 	class UILabelFactory;
 	class UIMultiLabelFactory;
+	class UIValueLabelFactory;
 
 	class UIInteraction;
 	class ILayoutStrategy;
@@ -33,29 +34,115 @@ namespace rmui
 		SDL_Color hoverColor = WHITE;
 	};
 
+	struct StyleHeading
+	{
+		int size         = 24;
+		std::string font = "default";
+	};
+
 	struct StyleText
 	{
-		int size              = 24;
-		std::string font      = "default";
-		SDL_Color color       = WHITE;
-		SDL_Color hoverColor  = RED;
-		TextAlign align       = TextAlign::Left;
-		TextVertAlign valign  = TextVertAlign::Top;
-		TextOverflow overflow = TextOverflow::Ellipsis;
+		std::unique_ptr<StyleHeading>
+			heading = nullptr;
+
+		SDL_Color color          = WHITE;
+		SDL_Color hoverColor     = RED;
+		SDL_Color disabledColor  = GRAY;
+		TextAlign align          = TextAlign::Left;
+		TextVertAlign valign     = TextVertAlign::Top;
+		TextOverflow overflow    = TextOverflow::Ellipsis;
 	};
 
 	struct StyleComponent
 	{
-		std::string name   = core::GConfig.shaders.def;
-		uint8_t alpha      = 255;
+		std::string name;
 		std::unique_ptr<ILayoutStrategy> 
 			layoutStrategy = nullptr;
 
 		StyleBackground back{};
 		StyleText text{};
 
-		bool dropShadow = false;
-		glm::vec2 shadowOffset = glm::vec2(0);
+		bool dropShadow			= false;
+		glm::vec2 shadowOffset	= glm::vec2(0);
+	};
+
+
+	class UIInteraction
+	{
+	private:
+		std::vector<std::function<void(UIWidget*)>> onClickFuncs;
+		std::vector<std::function<void(UIWidget*, glm::vec2)>> onPressedFuncs;
+		std::vector<std::function<void(UIWidget*)>> onEnterHoverFuncs;
+		std::vector<std::function<void(UIWidget*)>> onExitHoverFuncs;
+	public:
+		bool hovered = false;
+	public:
+		UIInteraction() = default;
+		UIInteraction(const UIInteraction& other) = default;
+		UIInteraction& operator=(const UIInteraction& other) = default;
+
+		~UIInteraction() = default;
+
+		void addOnClick(const std::function<void(UIWidget*)>& callback) { onClickFuncs.push_back(callback); }
+		void setOnClick(const std::function<void(UIWidget*)>& callback) { onClickFuncs.clear(); onClickFuncs.push_back(callback); }
+
+		void addOnPressed(const std::function<void(UIWidget*, glm::vec2)>& callback) { onPressedFuncs.push_back(callback); }
+		void setOnPressed(const std::function<void(UIWidget*, glm::vec2)>& callback) { onPressedFuncs.clear(); onPressedFuncs.push_back(callback); }
+
+		void addOnEnterHover(const std::function<void(UIWidget*)>& callback) { onEnterHoverFuncs.push_back(callback); }
+		void setOnEnterHover(const std::function<void(UIWidget*)>& callback) { onEnterHoverFuncs.clear(); onEnterHoverFuncs.push_back(callback); }
+
+		void addOnExitHover(const std::function<void(UIWidget*)>& callback) { onExitHoverFuncs.push_back(callback); }
+		void setOnExitHover(const std::function<void(UIWidget*)>& callback) { onExitHoverFuncs.clear(); onExitHoverFuncs.push_back(callback); }
+
+		void clearAllListeners()
+		{
+			onClickFuncs.clear();
+			onPressedFuncs.clear();
+			onEnterHoverFuncs.clear();
+			onExitHoverFuncs.clear();
+		}
+
+		void clearOnClick()		 { onClickFuncs.clear(); }
+		void clearOnPressed()	 { onPressedFuncs.clear(); }
+		void clearOnEnterHover() { onEnterHoverFuncs.clear(); }
+		void clearOnExitHover()	 { onExitHoverFuncs.clear(); }
+
+		void triggerOnClick(UIWidget* widget)
+		{
+			for (auto& func : onClickFuncs)
+			{
+				func(widget);
+			}
+		}
+
+		void triggerOnPressed(UIWidget* widget, glm::vec2 mousePos)
+		{
+			for (auto& func : onPressedFuncs)
+			{
+				func(widget, mousePos);
+			}
+		}
+
+		void triggerOnEnterHover(UIWidget* widget)
+		{
+			for (auto& func : onEnterHoverFuncs)
+			{
+				func(widget);
+			}
+
+			hovered = true;
+		}
+
+		void triggerOnExitHover(UIWidget* widget)
+		{
+			for (auto& func : onExitHoverFuncs)
+			{
+				func(widget);
+			}
+
+			hovered = false;
+		}
 	};
 
 	class UIWidget
@@ -68,21 +155,21 @@ namespace rmui
 		UIRect localRect{ 1 };
 
 		glm::vec2 offset{ 0.0f };
-		glm::vec2 pivot    = glm::vec2(0.0f);
+		glm::vec2 pivot{ 0.0f };
 
-		uint8_t m_alpha    = 255;
+		uint8_t m_alpha  = 255;
+						 
+		bool visible     = true;
+		bool blocking    = true;
+		bool interactive = false;
+		bool clipping    = true;
 
-		bool visible       = true;
-		bool blocking      = true;
-		bool interactive   = false;
-		bool clipping      = true;
-
-		std::string style  = "default";
+		StyleComponent& m_style;
 		std::string handle = "";
 
 		std::weak_ptr<UIWidget> parent;
 		std::unique_ptr<UIInteraction> interaction;
-		//
+		
 		std::vector<std::pair<std::type_index, std::unique_ptr<UIComponent>>> components;
 	protected:
 		std::vector<std::shared_ptr<UIWidget>> m_children;
@@ -91,7 +178,7 @@ namespace rmui
 		bool uiPtrSet = false;
 		IUIService* m_uiService = nullptr;
 	public:
-		UIWidget(WidgetID id) : id(id)
+		UIWidget(WidgetID id, StyleComponent& style) : id(id), m_style(style)
 		{
 			interaction = std::make_unique<UIInteraction>();
 		};
@@ -152,6 +239,12 @@ namespace rmui
 		void setOffset(float x, float y) { this->offset = glm::vec2(x, y); dirtyUpdate(); }
 		void setOffset(glm::vec2 offset) { this->offset = offset; dirtyUpdate(); }
 
+		virtual void setInteractive(bool enabled)
+		{
+			interactive = enabled;
+			interaction->hovered = false;
+		}
+
 		void dirtyUpdate()
 		{
 			m_dirtyUpdate = true;
@@ -194,83 +287,12 @@ namespace rmui
 		}
 	};
 
-	class UIInteraction
-	{
-	private:
-		std::vector<std::function<void(UIWidget*)>> onClickFuncs;
-		std::vector<std::function<void(UIWidget*, glm::vec2)>> onPressedFuncs;
-		std::vector<std::function<void(UIWidget*)>> onEnterHoverFuncs;
-		std::vector<std::function<void(UIWidget*)>> onExitHoverFuncs;
-	public:
-		bool hovered = false;
-	public:
-		UIInteraction() = default;
-		UIInteraction(const UIInteraction& other) = default;
-		UIInteraction& operator=(const UIInteraction& other) = default;
-
-		~UIInteraction() = default;
-
-		void addOnClick(const std::function<void(UIWidget*)>& callback) { onClickFuncs.push_back(callback); }
-		void addOnPressed(const std::function<void(UIWidget*, glm::vec2)>& callback) { onPressedFuncs.push_back(callback); }
-		void addOnEnterHover(const std::function<void(UIWidget*)>& callback) { onEnterHoverFuncs.push_back(callback); }
-		void addOnExitHover(const std::function<void(UIWidget*)>& callback) { onExitHoverFuncs.push_back(callback); }
-
-		void clearAllListeners()
-		{
-			onClickFuncs.clear();
-			onPressedFuncs.clear();
-			onEnterHoverFuncs.clear();
-			onExitHoverFuncs.clear();
-		}
-
-		void clearOnClick()
-		{
-			onClickFuncs.clear();
-		}
-
-		void triggerOnClick(UIWidget* widget)
-		{
-			for (auto& func : onClickFuncs)
-			{
-				func(widget);
-			}
-		}
-
-		void triggerOnPressed(UIWidget* widget, glm::vec2 mousePos)
-		{
-			for (auto& func : onPressedFuncs)
-			{
-				func(widget, mousePos);
-			}
-		}
-
-		void triggerOnEnterHover(UIWidget* widget)
-		{
-			for (auto& func : onEnterHoverFuncs)
-			{
-				func(widget);
-			}
-
-			hovered = true;
-		}
-
-		void triggerOnExitHover(UIWidget* widget)
-		{
-			for (auto& func : onExitHoverFuncs)
-			{
-				func(widget);
-			}
-
-			hovered = false;
-		}
-	};
-
 #pragma region Components
 	struct UIComponent
 	{
 		int priority = 0;
 
-		UIComponent(int priority = 0) : priority(priority) {};
+		UIComponent(const StyleComponent& style, int priority = 0) : priority(priority) {};
 		UIComponent(const UIComponent&) = delete;
 		UIComponent& operator=(const UIComponent&) = delete;
 		UIComponent(UIComponent&&) = delete;
@@ -286,38 +308,55 @@ namespace rmui
 		std::string text;
 		std::string font = "default";
 
-		SDL_Color color = BLACK;
-		SDL_Color hoverColor = BLACK;
+		SDL_Color color			= BLACK;
+		SDL_Color hoverColor	= BLACK;
+		SDL_Color disabledColor = GRAY;
 
-		int size = 24;
+		int size              = 24;
 		TextOverflow overflow = TextOverflow::Ellipsis;
-		TextAlign align = TextAlign::Left;
-		TextVertAlign valign = TextVertAlign::Middle;
+		TextAlign align       = TextAlign::Left;
+		TextVertAlign valign  = TextVertAlign::Middle;
 
 		glm::vec2 textOrigin{ 0.0f };
 
-		UIText(std::string text) : UIComponent(2)
+		UIText(const StyleComponent& style, const std::string& text) : UIComponent(style, 2)
 		{
-			this->text = text;
+			this->text	= text;
+
+			font		  = style.text.heading->font;
+			size		  = style.text.heading->size;
+
+			color		  = style.text.color;
+			hoverColor    = style.text.hoverColor;
+			disabledColor = style.text.disabledColor;
+			overflow	  = style.text.overflow;
+
+			align		  = style.text.align;
+			valign		  = style.text.valign;
 		};
 
-		UIText(std::string text, const StyleText& style) : UIComponent(2)
+		UIText(const StyleComponent& style, const std::string& text, TextAlign align, TextVertAlign valign) : UIComponent(style, 2)
 		{
 			this->text = text;
 
-			font = style.font;
-			color = style.color;
-			hoverColor = style.hoverColor;
-			size = style.size;
-			overflow = style.overflow;
-			align = style.align;
-			valign = style.valign;
+			font          = style.text.heading->font;
+			size          = style.text.heading->size;
+
+			color         = style.text.color;
+			hoverColor    = style.text.hoverColor;
+			disabledColor = style.text.disabledColor;
+			overflow      = style.text.overflow;
+
+			align         = align;
+			valign        = valign;
 		};
 
 		void realize(UIWidget* widget) override
 		{
 			SDL_Color fontColor = color;
-			if (widget->interaction->hovered)
+			if (widget->interactive == false)
+				fontColor = disabledColor;
+			else if (widget->interaction->hovered)
 				fontColor = hoverColor;
 
 			fontColor.a = widget->alpha();
@@ -387,35 +426,30 @@ namespace rmui
 		std::vector<std::string> lines;
 		std::vector<std::string_view> views;
 
-		//std::string text;
 		std::string font = "default";
 
-		SDL_Color color = BLACK;
+		SDL_Color color		 = BLACK;
 		SDL_Color hoverColor = BLACK;
 
 		int size = 24;
 		TextOverflow overflow = TextOverflow::Ellipsis;
-		TextAlign align = TextAlign::Left;
-		TextVertAlign valign = TextVertAlign::Middle;
+		TextAlign align       = TextAlign::Left;
+		TextVertAlign valign  = TextVertAlign::Middle;
 
 		glm::vec2 textOrigin = glm::vec2(0.0f);
 
-		UIMultilineText(std::string text) : UIComponent(2)
-		{
-			setText(text);
-		};
-
-		UIMultilineText(std::string text, const StyleText& style) : UIComponent(2)
+		UIMultilineText(const StyleComponent& style, std::string text) : UIComponent(style, 2)
 		{
 			setText(text);
 
-			font = style.font;
-			color = style.color;
-			hoverColor = style.hoverColor;
-			size = style.size;
-			overflow = style.overflow;
-			align = style.align;
-			valign = style.valign;
+			font       = style.text.heading->font;
+			size       = style.text.heading->size;
+
+			color      = style.text.color;
+			hoverColor = style.text.hoverColor;
+			overflow   = style.text.overflow;
+			align      = style.text.align;
+			valign     = style.text.valign;
 		};
 
 		void realize(UIWidget* widget) override
@@ -501,13 +535,13 @@ namespace rmui
 		ecs::Sprite m_sprite{};
 		ecs::Transform2D m_transform{};
 
-		UIBackground(TexID _texture, const StyleBackground& style) : UIComponent(1)
+		UIBackground(const StyleComponent& style, TexID _texture) : UIComponent(style, 1)
 		{
 			texture = _texture;
-			keepAspectRatio = style.keepAspectRatio;
+			keepAspectRatio = style.back.keepAspectRatio;
 
-			color = style.color;
-			hoverColor = style.hoverColor;
+			color = style.back.color;
+			hoverColor = style.back.hoverColor;
 
 			m_sprite.material = Resources::sharedMat(core::GConfig.shaders.ui);
 			m_sprite.material.blendMode = BlendMode::Alpha;
@@ -517,7 +551,7 @@ namespace rmui
 		{
 			SDL_Color c = color;
 
-			if (widget->interaction)
+			if (widget->interactive && widget->interaction)
 				c = widget->interaction->hovered ? hoverColor : color;
 
 			c.a = widget->alpha();
@@ -537,8 +571,7 @@ namespace rmui
 		bool enabled = true;
 		glm::vec2 offset{ 0.0f };
 
-		UIDropShadow() : UIComponent(0) {};
-		UIDropShadow(const StyleComponent& style) : UIComponent(0) {
+		UIDropShadow(const StyleComponent& style) : UIComponent(style, 0) {
 			enabled = style.dropShadow;
 			offset = style.shadowOffset;
 		};
@@ -563,12 +596,54 @@ namespace rmui
 	public:
 		UIWidget* label = nullptr;
 	public:
-		UIButton(WidgetID id) : UIWidget(id) {};
+		UIButton(WidgetID id, StyleComponent& style) : UIWidget(id, style) {};
 
 		void setText(const std::string& text)
 		{
 			auto* ptr = label->tryGetComponent<UIText>();
 			if (ptr) { ptr->text = text; };
+		}
+
+		void setInteractive(bool enabled) override
+		{
+			UIWidget::setInteractive(enabled);
+			label->interactive = enabled;
+			label->interaction->hovered = false;
+		}
+	};
+
+	class UIValueLabel : public UIWidget
+	{
+	public:
+		UIWidget* namelabel = nullptr;
+		UIWidget* valueLabel = nullptr;
+	public:
+		UIValueLabel(WidgetID id, StyleComponent& style) : UIWidget(id, style) {};
+
+		void setText(const std::string& text)
+		{
+			auto* ptr = namelabel->tryGetComponent<UIText>();
+			if (ptr) { ptr->text = text; };
+		}
+
+		void setValue(const std::string& text)
+		{
+			auto* ptr = valueLabel->tryGetComponent<UIText>();
+			if (ptr) { ptr->text = text; };
+		}
+
+		std::string text()
+		{
+			auto* ptr = namelabel->tryGetComponent<UIText>();
+			if (ptr) { return ptr->text; };
+			return "";
+		}
+
+		std::string value()
+		{
+			auto* ptr = valueLabel->tryGetComponent<UIText>();
+			if (ptr) { return ptr->text; };
+			return "";
 		}
 	};
 #pragma endregion
@@ -581,6 +656,8 @@ public:
 	virtual ~IUIService() = default;
 
 	virtual void loadStyles(nlohmann::json data) = 0;
+	virtual rmui::StyleComponent& style(const std::string& handle) = 0;
+	virtual rmui::StyleHeading& heading(const std::string& handle) = 0;
 
 	virtual void init(int width, int height) = 0;
 	virtual void resizeCanvas(int width, int height) = 0;
@@ -590,8 +667,9 @@ public:
 	virtual void handleMouse(glm::vec2 mousePos) = 0;
 	virtual void handleInput(SDL_Event& e) = 0;
 
-	virtual rmui::UIWidget* const widget(WidgetID id) const = 0;
-	virtual rmui::UIWidget* const widget(std::string handle) const = 0;
+	virtual std::weak_ptr<rmui::UIWidget> const widget(WidgetID id) const = 0;
+	virtual std::weak_ptr<rmui::UIWidget> const widget(std::string handle) const = 0;
+
 	virtual const rmui::UIWidget& root() = 0;
 	virtual int nextId() = 0;
 
@@ -615,20 +693,19 @@ public:
 	}
 
 	template<typename T>
-	std::shared_ptr<T> create(const std::string& handle, const std::string& style, const std::shared_ptr<rmui::UIWidget>& parent)
+	std::shared_ptr<T> create(const std::string& handle, const std::string& styleName, const std::shared_ptr<rmui::UIWidget>& parent)
 	{
-		std::shared_ptr<rmui::UIWidget> widget = std::make_shared<T>(nextId());
-		initWidget(widget, handle, style, parent);
+		std::shared_ptr<rmui::UIWidget> widget = std::make_shared<T>(nextId(), style(styleName));
+		initWidget(widget, handle, styleName, parent);
 		return std::dynamic_pointer_cast<T>(widget);
 	}
-
-	virtual const rmui::StyleComponent& style(const std::string& handle) = 0;
 
 	virtual rmui::UIButtonFactory createButton() = 0;
 	virtual rmui::UIWindowFactory createWindow() = 0;
 	virtual rmui::UIImageFactory createImage() = 0;
 	virtual rmui::UILabelFactory createLabel() = 0;
 	virtual rmui::UIMultiLabelFactory createMultiLabel() = 0;
+	virtual rmui::UIValueLabelFactory createValueLabel() = 0;
 protected:
 	virtual void initWidget(std::shared_ptr<rmui::UIWidget> widget, const std::string& handle, const std::string& style, const std::shared_ptr<rmui::UIWidget>& parent) = 0;
 	virtual void playAnimation(WidgetID id, std::unique_ptr<rmui::IAnimation> animation) = 0;
@@ -647,7 +724,7 @@ void rmui::UIWidget::addComponent(TArgs&&... args)
 	components.emplace_back(
 		std::piecewise_construct,
 		std::forward_as_tuple(typeid(TComponent)),
-		std::forward_as_tuple(std::make_unique<TComponent>(std::forward<TArgs>(args)...)));
+		std::forward_as_tuple(std::make_unique<TComponent>(m_style, std::forward<TArgs>(args)...)));
 
 	std::sort(components.begin(), components.end(), [](const auto& a, const auto& b)
 	{

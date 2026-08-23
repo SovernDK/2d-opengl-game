@@ -8,14 +8,17 @@
 #include <random>
 #include <optional>
 #include <string>
+#include <iostream>
+#include <sstream>
 
-#define HexToRGBA(hex, alpha) color::HexToRGB(hex, alpha)
+#define HexToRGB(hex) color::ConvertHexToRGBA(hex, 255)
+#define HexToRGBA(hex, alpha) color::ConvertHexToRGBA(hex, alpha)
 
 namespace util_vec {
-    inline bool equal(glm::vec2 a, glm::vec2 b)
-    {
-        return glm::distance(a, b) < glm::epsilon<float>();
-    }
+	inline bool equal(glm::vec2 a, glm::vec2 b)
+	{
+		return glm::distance(a, b) < glm::epsilon<float>();
+	}
 
 	inline glm::vec2 lerp(glm::vec2 a, glm::vec2 b, float t)
 	{
@@ -26,125 +29,145 @@ namespace util_vec {
 
 namespace random
 {
-    static std::mt19937 gen;
+	static std::mt19937 gen;
 
-    inline void Init(std::optional<uint32_t> seed)
-    {
-        if (seed.has_value())
-            gen.seed(seed.value());
-        else
-            gen.seed(std::random_device{}());
-    }
+	inline void Init(std::optional<uint32_t> seed)
+	{
+		if (seed.has_value())
+			gen.seed(seed.value());
+		else
+			gen.seed(std::random_device{}());
+	}
 
-    inline uint32_t Seed()
-    {
-        return std::uniform_int_distribution<uint32_t>(0, (std::numeric_limits<uint32_t>::max)())(gen);
-    }
+	inline uint32_t Seed()
+	{
+		return std::uniform_int_distribution<uint32_t>(0, (std::numeric_limits<uint32_t>::max)())(gen);
+	}
 
-    inline int Int(int min, int max)
-    {
-        if (min > max) {
-            std::swap(min, max);
-            SDL_Log("Warning: min value was greater than max value in Random::Int, swapping values to avoid issues!");
-        }
-        else if (max == min)
-        {
-            SDL_Log("Warning: min value was equal to max value in Random::Int, returning the only possible value!");
-            return min;
-        }
+	inline int Int(int min, int max)
+	{
+		if (min > max) {
+			std::swap(min, max);
+			SDL_Log("Warning: min value was greater than max value in Random::Int, swapping values to avoid issues!");
+		}
+		else if (max == min)
+		{
+			SDL_Log("Warning: min value was equal to max value in Random::Int, returning the only possible value!");
+			return min;
+		}
 
-        return std::uniform_int_distribution<>(min, max)(gen);
-    }
+		return std::uniform_int_distribution<>(min, max)(gen);
+	}
 
-    inline float Float(float min, float max)
-    {
-        if (min > max) {
-            std::swap(min, max);
-            SDL_Log("Warning: min value was greater than max value in Random::Float, swapping values to avoid issues!");
-        }
-        else if (max == min)
-        {
-            SDL_Log("Warning: min value was equal to max value in Random::Float, returning the only possible value!");
-            return min;
-        }
+	inline float Float(float min, float max)
+	{
+		if (min > max) {
+			std::swap(min, max);
+			SDL_Log("Warning: min value was greater than max value in Random::Float, swapping values to avoid issues!");
+		}
+		else if (max == min)
+		{
+			SDL_Log("Warning: min value was equal to max value in Random::Float, returning the only possible value!");
+			return min;
+		}
 
-        return std::uniform_real_distribution<>(min, max)(gen);
-    }
+		return std::uniform_real_distribution<>(min, max)(gen);
+	}
 
-    inline bool Chance(float probability)
-    {
-        return std::uniform_real_distribution<>(0.0f, 1.0f)(gen) < probability;
-    }
+	inline bool Chance(float probability)
+	{
+		return std::uniform_real_distribution<>(0.0f, 1.0f)(gen) < probability;
+	}
 }
 
 namespace text
 {
-    inline std::vector<std::string> split(const std::string& text, std::string delimeter)
-    {
-        std::vector<std::string> result;
-        size_t start = 0;
+	inline std::vector<std::string> split(const std::string& text, std::string delimeter)
+	{
+		std::vector<std::string> result;
+		size_t start = 0;
 
-        for (size_t found = text.find(delimeter); found != std::string::npos; found = text.find(delimeter, start))
-        {
-            result.emplace_back(text.begin() + start, text.begin() + found);
-            start = found + delimeter.size();
-        }
-        if (start != text.size())
-            result.emplace_back(text.begin() + start, text.end());
-        return result;
-    }
+		for (size_t found = text.find(delimeter); found != std::string::npos; found = text.find(delimeter, start))
+		{
+			result.emplace_back(text.begin() + start, text.begin() + found);
+			start = found + delimeter.size();
+		}
+		if (start != text.size())
+			result.emplace_back(text.begin() + start, text.end());
+		return result;
+	}
 
-    inline std::string toLower(std::string& text)
-    {
-        for (auto& c : text)
-        {
-            c = std::tolower(c);
-        }
+	inline std::string toLower(const std::string& text)
+	{
+		std::string result = text;
+		for (auto& c : result)
+		{
+			c = std::tolower(c);
+		}
 
-        return text;
-    }
+		return result;
+	}
+
+	inline std::string toUpper(const std::string& text)
+	{
+		std::string result = text;
+		for (auto& c : result)
+		{
+			c = std::toupper(c);
+		}
+
+		return result;
+	}
+
+	template <typename T> 
+	inline std::string tostr(const T& t)
+	{
+		std::ostringstream os;
+		os << t;
+		return os.str();
+	}
 }
 
 namespace color
 {
-    inline SDL_Color lerp(const SDL_Color& a, const SDL_Color& b, float t)
-    {
-        return {
-            static_cast<uint8_t>(a.r + t * (b.r - a.r)),
-            static_cast<uint8_t>(a.g + t * (b.g - a.g)),
-            static_cast<uint8_t>(a.b + t * (b.b - a.b)),
-            static_cast<uint8_t>(a.a + t * (b.a - a.a))
-        };
-    }
+	inline SDL_Color lerp(const SDL_Color& a, const SDL_Color& b, float t)
+	{
+		return {
+			static_cast<uint8_t>(a.r + t * (b.r - a.r)),
+			static_cast<uint8_t>(a.g + t * (b.g - a.g)),
+			static_cast<uint8_t>(a.b + t * (b.b - a.b)),
+			static_cast<uint8_t>(a.a + t * (b.a - a.a))
+		};
+	}
 
-    inline SDL_Color HexToRGB(const std::string& hex, uint8_t alpha)
-    {
-        std::string s = hex;
+	inline SDL_Color ConvertHexToRGBA(const std::string& hex, uint8_t alpha)
+	{
+		std::string s = hex;
 
-        if (s[0] == '#')
-            s = s.substr(1);
+		if (s[0] == '#')
+			s = s.substr(1);
 
-        if (s.length() != 6)
-            throw std::runtime_error("Invalid hex color");
+		if (s.length() != 6)
+			throw std::runtime_error("Invalid hex color");
 
-        SDL_Color c;
-        c.r = static_cast<uint8_t>(std::stoi(s.substr(0, 2), nullptr, 16));
-        c.g = static_cast<uint8_t>(std::stoi(s.substr(2, 2), nullptr, 16));
-        c.b = static_cast<uint8_t>(std::stoi(s.substr(4, 2), nullptr, 16));
-        c.a = alpha;
+		SDL_Color c;
+		c.r = static_cast<uint8_t>(std::stoi(s.substr(0, 2), nullptr, 16));
+		c.g = static_cast<uint8_t>(std::stoi(s.substr(2, 2), nullptr, 16));
+		c.b = static_cast<uint8_t>(std::stoi(s.substr(4, 2), nullptr, 16));
+		c.a = alpha;
 
-        return c;
-    }
+		return c;
+	}
 
-    inline glm::vec4 SDLColorToVec4(SDL_Color color)
-    {
-        return glm::vec4(
-            	color.r / 255.0f,
-            	color.g / 255.0f,
-            	color.b / 255.0f,
-            	color.a / 255.0f
-            );
-    }
+	inline glm::vec4 SDLColorToVec4(SDL_Color color)
+	{
+		return glm::vec4(
+				color.r / 255.0f,
+				color.g / 255.0f,
+				color.b / 255.0f,
+				color.a / 255.0f
+			);
+	}
 
 	inline glm::vec3 SDLColorToVec3(SDL_Color color)
 	{
@@ -158,32 +181,32 @@ namespace color
 
 namespace utils
 {
-    inline float normalize(float value, float min, float max)
-    {
-        if (min > max) {
-            std::swap(min, max);
-            SDL_Log("Warning: min value was greater than max value in utils::normalize, swapping values to avoid issues!");
-        }
-        else if (max == min)
-        {
-            SDL_Log("Warning: min value was equal to max value in utils::normalize, returning 0.0f to avoid division by zero!");
-            return 0.0f;
-        }
-        return (value - min) / (max - min);
-    }
+	inline float normalize(float value, float min, float max)
+	{
+		if (min > max) {
+			std::swap(min, max);
+			SDL_Log("Warning: min value was greater than max value in utils::normalize, swapping values to avoid issues!");
+		}
+		else if (max == min)
+		{
+			SDL_Log("Warning: min value was equal to max value in utils::normalize, returning 0.0f to avoid division by zero!");
+			return 0.0f;
+		}
+		return (value - min) / (max - min);
+	}
 
-    inline void packFloatToRGBA(float value, uint8_t* out)
-    {
-        glm::vec4 enc = glm::vec4(1.0f, 255.0f, 65025.0f, 16581375.0f) * value;
-        enc = glm::fract(enc); // keep fractional part of each component
-        // subtract bleed from higher channels into lower ones
-        enc.x -= enc.y * (1.0f / 255.0f);
-        enc.y -= enc.z * (1.0f / 255.0f);
-        enc.z -= enc.w * (1.0f / 255.0f);
+	inline void packFloatToRGBA(float value, uint8_t* out)
+	{
+		glm::vec4 enc = glm::vec4(1.0f, 255.0f, 65025.0f, 16581375.0f) * value;
+		enc = glm::fract(enc); // keep fractional part of each component
+		// subtract bleed from higher channels into lower ones
+		enc.x -= enc.y * (1.0f / 255.0f);
+		enc.y -= enc.z * (1.0f / 255.0f);
+		enc.z -= enc.w * (1.0f / 255.0f);
 
-        out[0] = (uint8_t)std::round(enc.x * 255.0f);
-        out[1] = (uint8_t)std::round(enc.y * 255.0f);
-        out[2] = (uint8_t)std::round(enc.z * 255.0f);
-        out[3] = (uint8_t)std::round(enc.w * 255.0f);
-    }
+		out[0] = (uint8_t)std::round(enc.x * 255.0f);
+		out[1] = (uint8_t)std::round(enc.y * 255.0f);
+		out[2] = (uint8_t)std::round(enc.z * 255.0f);
+		out[3] = (uint8_t)std::round(enc.w * 255.0f);
+	}
 }

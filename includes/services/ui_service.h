@@ -18,29 +18,32 @@ class Material;
 class UIService : public IUIService
 {
 private:
-	std::unordered_map<WidgetID, std::shared_ptr<rmui::UIWidget>> ids;
+	std::unordered_map<WidgetID,	std::shared_ptr<rmui::UIWidget>> ids;
 	std::unordered_map<std::string, std::shared_ptr<rmui::UIWidget>> handles;
 	std::unordered_map<std::string, std::unique_ptr<rmui::StyleComponent>> styles;
+	std::unordered_map<std::string, std::unique_ptr<rmui::StyleHeading>> headings;
 
 	std::unordered_map<WidgetID, std::queue<std::unique_ptr<rmui::IAnimation>>> m_animations;
 
 	std::shared_ptr<rmui::UIWidget> m_root = nullptr;
-	rmui::UIWidget* focused = nullptr;
-	rmui::UIWidget* prevFocused = nullptr;
+	rmui::UIWidget* focused                = nullptr;
+	rmui::UIWidget* prevFocused            = nullptr;
 
 	int submissionIndex = UI_Z;
-	bool isBlocked = false;
+	bool isBlocked      = false;
 
 	IdPool<WidgetID> idPool;
-	int canvasWidth = 0;
+	int canvasWidth  = 0;
 	int canvasHeight = 0;
 
-	bool ignoreAnim = false;
+	bool ignoreAnim  = false;
 public:
 	UIService() = default;
 	~UIService() = default;
 
 	void loadStyles(nlohmann::json data) override;
+	rmui::StyleComponent& style(const std::string& handle) override { return *styles[handle].get();	}
+	rmui::StyleHeading& heading(const std::string& handle) override { return *headings[handle].get(); }
 
 	void init(int width, int height) override;
 	void resizeCanvas(int width, int height) override;
@@ -56,11 +59,11 @@ public:
 	void progressAnimations(float dt) override;
 	void clearAnimations() override { m_animations.clear(); }
 
-	rmui::UIWidget* const widget(int id) const override;
-	rmui::UIWidget* const widget(std::string handle) const override;
+	std::weak_ptr<rmui::UIWidget> const widget(int id) const override;
+	std::weak_ptr<rmui::UIWidget> const widget(std::string handle) const override;
 
 	template<typename TWidget>
-	auto widget(int id) -> const TWidget*
+	auto widget(int id) -> const std::weak_ptr<TWidget>
 	{
 		static_assert(std::is_base_of_v<rmui::UIWidget, TWidget>,
 			"widget<T> - T type must be derived from rmui::UIWidget!");
@@ -69,7 +72,7 @@ public:
 	}
 
 	template<typename TWidget>
-	auto widget(std::string handle) -> const TWidget*
+	auto widget(std::string handle) -> const std::weak_ptr<TWidget>
 	{
 		static_assert(std::is_base_of_v<rmui::UIWidget, TWidget>,
 			"widget<T> - T type must be derived from UIWidget!");
@@ -80,23 +83,21 @@ public:
 	const rmui::UIWidget& root() override { return *m_root.get(); }
 	int nextId() override { return idPool.next(); }
 
-	const rmui::StyleComponent& style(const std::string& handle) override { return *styles[handle].get(); }
-
-	rmui::UIButtonFactory createButton() override { return rmui::UIButtonFactory(*this); }
-	rmui::UIWindowFactory createWindow() override { return rmui::UIWindowFactory(*this); }
-	rmui::UIImageFactory createImage() override { return rmui::UIImageFactory(*this); }
-	rmui::UILabelFactory createLabel() override { return rmui::UILabelFactory(*this); }
-	rmui::UIMultiLabelFactory createMultiLabel() override { return rmui::UIMultiLabelFactory(*this); }
+	rmui::UIButtonFactory createButton() override			{ return rmui::UIButtonFactory(*this); }
+	rmui::UIWindowFactory createWindow() override			{ return rmui::UIWindowFactory(*this); }
+	rmui::UIImageFactory createImage() override				{ return rmui::UIImageFactory(*this); }
+	rmui::UILabelFactory createLabel() override				{ return rmui::UILabelFactory(*this); }
+	rmui::UIMultiLabelFactory createMultiLabel() override	{ return rmui::UIMultiLabelFactory(*this); }
+	rmui::UIValueLabelFactory createValueLabel() override	{ return rmui::UIValueLabelFactory(*this); }
 private:
 	void realizeStyle(rmui::UIWidget& widget, float dt);
 	void drawRecursive(rmui::UIWidget* m_root, const glm::vec4 parentClip, float dt);
 	void updateRecursive(rmui::UIWidget* m_root, const rmui::UIRect& parentRect, rmui::ILayoutStrategy& strategy, int index);
 	void topWidgetAtPos(rmui::UIWidget* widget, glm::vec2 pos);
 
-	void initWidget(std::shared_ptr<rmui::UIWidget> widget, const std::string& handle, const std::string& style, const std::shared_ptr<rmui::UIWidget>& parent) override
+	void initWidget(std::shared_ptr<rmui::UIWidget> widget, const std::string& handle, const std::string& styleName, const std::shared_ptr<rmui::UIWidget>& parent) override
 	{
 		widget->setUI(this);
-		widget->style = style;
 
 		if (parent)
 		{

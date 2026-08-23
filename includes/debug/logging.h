@@ -195,6 +195,10 @@ namespace Debug
 			windowMsg.c_str(),
 			NULL
 		);
+
+		SDL_Event quit_event;
+		quit_event.type = SDL_EVENT_QUIT;
+		SDL_PushEvent(&quit_event);
 	}
 #pragma endregion Logging
 }

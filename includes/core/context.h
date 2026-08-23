@@ -9,6 +9,7 @@ namespace historia
 namespace ecs
 {
 	class ECSWorld;
+	class Entity;
 }
 
 namespace editor
@@ -25,10 +26,11 @@ namespace core
 	public:
 		virtual ~IContext() = default;
 
-		virtual historia::Story* story() = 0;
-		virtual ICamera* mainCamera() = 0;
-		virtual editor::Editor* editor() = 0;
-		virtual ecs::ECSWorld* ecsWorld() = 0;
+		virtual historia::Story* story()    = 0;
+		virtual ICamera* mainCamera()       = 0;
+		virtual editor::Editor* editor()    = 0;
+		virtual ecs::ECSWorld* ecsWorld()   = 0;
+		virtual ecs::Entity& playerEntity() = 0;
 
 		virtual void callback(float delay, std::function<void()> func) = 0;
 	};

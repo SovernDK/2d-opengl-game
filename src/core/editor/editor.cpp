@@ -115,7 +115,7 @@ void Editor::update(float dt, const ICamera& camera)
 	float botBarWidth = game.screenWidth - leftBarWidth + rightBarWidth;
 	float botBarHeight = (game.screenHeight - camera.viewport().w) / 2;
 	glm::vec2 botBarPos = glm::vec2(leftBarWidth, game.screenHeight - topBarHeight);
-
+	
 	ImGui::SetNextWindowPos(ImVec2(botBarPos.x, botBarPos.y), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(botBarWidth, botBarHeight), ImGuiCond_Always);
 	ImGui::Begin("BottomBar", nullptr, toolbar_flags);
@@ -134,7 +134,7 @@ void Editor::draw()
 {
 	if (uiSelectedId != 0)
 	{
-		auto selectedWidget = ServiceLocator::get<IUIService>()->widget(uiSelectedId);
+		auto selectedWidget = ServiceLocator::get<IUIService>()->widget(uiSelectedId).lock().get();
 		if (!selectedWidget)
 		{
 			uiSelectedId = 0;
@@ -504,12 +504,12 @@ void Editor::uiInspector() const
 		return;
 	}
 
-	auto selectedWidget = ServiceLocator::get<IUIService>()->widget(uiSelectedId);
+	auto selectedWidget = ServiceLocator::get<IUIService>()->widget(uiSelectedId).lock().get();
 	ImGui::Text(std::format("Id: {}", selectedWidget->id).c_str());
-	ImGui::Text(std::format("Style: {}", selectedWidget->style).c_str());
+	ImGui::Text(std::format("Style: {}", selectedWidget->m_style.name).c_str());
 
 	int alpha = selectedWidget->alpha();
-	ImGui::InputInt("Alpha ", &alpha, 1, 5);
+	ImGui::InputInt("Alpha", &alpha, 1, 5);
 	selectedWidget->setAlpha(alpha);
 
 	ImGui::SeparatorText("Local Rect");
@@ -534,6 +534,7 @@ void Editor::uiInspector() const
 	ImGui::Checkbox("Interactive", &selectedWidget->interactive);
 	ImGui::Checkbox("Clipping", &selectedWidget->clipping);
 
+	ImGui::SeparatorText("Components");
 	for(auto& component : selectedWidget->components)
 	{
 		if (component.first == typeid(rmui::UIBackground))
@@ -550,6 +551,28 @@ void Editor::uiInspector() const
 			ImGui::Text(std::format("Text: {}", text->font).c_str());
 			ImGui::InputInt("Size: ", &text->size, 1, 5);
 		}
+		else if (component.first == typeid(rmui::UIMultilineText))
+		{
+			auto* text = static_cast<rmui::UIMultilineText*>(component.second.get());
+			ImGui::SeparatorText("Text");
+			ImGui::Text(std::format("Text Lines: {}", text->lines.size()).c_str());
+			ImGui::Text(std::format("Text: {}", text->font).c_str());
+			ImGui::InputInt("Size: ", &text->size, 1, 5);
+		}
+	}
+
+	if(ImGui::CollapsingHeader("Style"))
+	{
+		//ImGui::SeparatorText("Layout");
+		ImGui::SeparatorText("Back");
+		ImGui::Text(std::format("Keep Aspect Ratio: {}", selectedWidget->m_style.back.keepAspectRatio).c_str());
+		ImGui::Text(std::format("TextureID: {}", selectedWidget->m_style.back.texture.id).c_str());
+
+		ImGui::SeparatorText("Text");
+		ImGui::Text(std::format("Font: {}", selectedWidget->m_style.text.heading->font).c_str());
+		ImGui::Text(std::format("Size: {}", selectedWidget->m_style.text.heading->size).c_str());
+		ImGui::Text(std::format("Align: {}", magic_enum::enum_name(selectedWidget->m_style.text.align)).c_str());
+		ImGui::Text(std::format("Valign: {}", magic_enum::enum_name(selectedWidget->m_style.text.valign)).c_str());
 	}
 
 	ImGui::SeparatorText("Actions");

@@ -2,6 +2,7 @@
 #include "services/scene.h"
 #include "graphics/texture.h"
 #include "graphics/graphics.h"
+#include "memory/flat_map.h"
 
 namespace core
 {
@@ -14,6 +15,12 @@ namespace rmui
 	class UIButton;
 }
 
+namespace historia
+{
+	enum class EDirection;
+	struct ChoiceEffect;
+}
+
 class IUIService;
 
 class NarrativeEventScene : public IScene
@@ -24,9 +31,9 @@ private:
 	
 	IUIService* ui;
 
-	std::shared_ptr<rmui::UIWidget> bookWindow, leftPage, rightPage,
-		header, contentUI, choices;
-	std::vector<std::shared_ptr<rmui::UIButton>> directionBtns;
+	std::shared_ptr<rmui::UIWidget> rightPage, header, contentUI, actions, choices, directions;
+	mem::flat_map<historia::EDirection, std::shared_ptr<rmui::UIButton>> directionBtns;
+	std::vector<std::shared_ptr<rmui::UIButton>> choiceBtns;
 
 	bool updateRoom = false;
 public:
@@ -37,4 +44,6 @@ public:
 	void draw() override;
 	void unload() override;
 	void quit() override;
+
+	void applyEffect(const historia::ChoiceEffect& effect);
 };

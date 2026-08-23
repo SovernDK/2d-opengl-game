@@ -26,79 +26,79 @@ std::string Resources::defaultMaterial = "default";
 
 std::weak_ptr<ShaderProgram> Resources::loadShader(const string& vertex, const string& fragment, const std::string& name)
 {
-    std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
-    Shader fShader, vShader;
+	std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
+	Shader fShader, vShader;
 
-    #ifdef _DEBUG
-    const std::string vertexPath = std::format("{}shaders/{}", PROJECT_ROOT_DIR, vertex);
-    const std::string fragmentPath = std::format("{}shaders/{}", PROJECT_ROOT_DIR, fragment);
-    #else
-    const std::string vertexPath = file_util::getPath(GConfig.getShadersPath(), vertex).string();
-    const std::string fragmentPath = file_util::getPath(GConfig.getShadersPath(), fragment).string();
-    #endif
+	#ifdef _DEBUG
+	const std::string vertexPath = std::format("{}shaders/{}", PROJECT_ROOT_DIR, vertex);
+	const std::string fragmentPath = std::format("{}shaders/{}", PROJECT_ROOT_DIR, fragment);
+	#else
+	const std::string vertexPath = file_util::getPath(GConfig.getShadersPath(), vertex).string();
+	const std::string fragmentPath = file_util::getPath(GConfig.getShadersPath(), fragment).string();
+	#endif
 
-    fShader.FromFile(fragmentPath,  GL_FRAGMENT_SHADER);
-    vShader.FromFile(vertexPath,    GL_VERTEX_SHADER);
+	fShader.FromFile(fragmentPath,  GL_FRAGMENT_SHADER);
+	vShader.FromFile(vertexPath,    GL_VERTEX_SHADER);
 
-    shaderProgram->init();
-    shaderProgram->attach(fShader);
-    shaderProgram->attach(vShader);
-    shaderProgram->link();
+	shaderProgram->init();
+	shaderProgram->attach(fShader);
+	shaderProgram->attach(vShader);
+	shaderProgram->link();
 
-    fShader.destroy();
-    vShader.destroy();
+	fShader.destroy();
+	vShader.destroy();
 
-    shaders[name] = move(shaderProgram);
-    return std::weak_ptr<ShaderProgram>(shaders[name]);
+	shaders[name] = move(shaderProgram);
+	return std::weak_ptr<ShaderProgram>(shaders[name]);
 }
 
 std::weak_ptr<ShaderProgram> Resources::loadShader(const string& name)
 {
-    if (shaders.contains(name))
-    {
-        return shaders[name];
-    }
+	if (shaders.contains(name))
+	{
+		return shaders[name];
+	}
 
 	ErrorLog("Resources", "Couldn't find shader with handle %s", name.c_str());
-    return std::weak_ptr<ShaderProgram>();
+	return std::weak_ptr<ShaderProgram>();
 }
 
 std::shared_ptr<ShaderProgram> Resources::getStrPtrShader(const string& name)
 {
-    if (shaders.contains(name))
-    {
-        return shaders[name];
-    }
+	if (shaders.contains(name))
+	{
+		return shaders[name];
+	}
 
 	ErrorLog("Resources", "Couldn't find shader with handle %s", name.c_str());
-    return std::shared_ptr<ShaderProgram>();
+	return std::shared_ptr<ShaderProgram>();
 }
 
 Texture2D* Resources::saveTexture(Texture2D&& texture, std::string name)
 {
-    textures[name] = std::make_unique<Texture2D>(std::move(texture));
-    return textures[name].get();
+	textures[name] = std::make_unique<Texture2D>(std::move(texture));
+	return textures[name].get();
 }
 
 Texture2D* Resources::loadTexture(const fs::path& path, const std::string& name)
 {
-    StbiImage img = ServiceLocator::get<IFileService>()->loadFile(path.string(), (int) STBI_rgb_alpha);
+	StbiImage img = ServiceLocator::get<IFileService>()->loadFile(path.string(), (int) STBI_rgb_alpha);
 
-    if (!img.check)
-    {
-        return nullptr;
-    }
+	if (!img.check)
+	{
+		return nullptr;
+	}
 
-    Texture2D texture = TextureBuilder()
-        .setFiltering(GL_NEAREST)
+	Texture2D texture = TextureBuilder()
+		.setFiltering(GL_NEAREST)
 		.setWrapping(GL_REPEAT)
 		.setWrapAxis(true, true)
-        .setBorderColor(0, 0, 0)
+		.setBorderColor(0, 0, 0)
 		.build(img.width, img.height, img.data);
 
 	InfoLog("Resources", "Loaded texture with handle %s", name.c_str());
-    textures[name] = std::make_unique<Texture2D>(std::move(texture));
-    return textures[name].get();
+	textures[name] = std::make_unique<Texture2D>(std::move(texture));
+	return textures[name].get();
 }
 
 Texture2D* Resources::loadTexture(const fs::path& path, const std::string& name, TextureBuilder& builder)
@@ -119,13 +119,13 @@ Texture2D* Resources::loadTexture(const fs::path& path, const std::string& name,
 
 Texture2D* Resources::texture(const string& name)
 {
-    if (textures.contains(name))
-    {
-        return textures[name].get();
-    }
+	if (textures.contains(name))
+	{
+		return textures[name].get();
+	}
 
-    ErrorLog("Resources", "Couldn't find texture with handle %s", name.c_str());
-    return textures[defaultTexture].get();
+	ErrorLog("Resources", "Couldn't find texture with handle %s", name.c_str());
+	return textures[defaultTexture].get();
 }
 
 Texture2D* Resources::texture(TexID id)
@@ -151,11 +151,11 @@ void Resources::releaseTexture(const std::string& name)
 
 bool Resources::loadTTFont(const fs::path path, int fontSize)
 {
-    string fontName = file_util::getNameFromPath(path);
+	string fontName = file_util::getNameFromPath(path);
 	
 	if (!fs::exists(path))
 	{
-        ErrorLog("Font", "Font file does not exist: %s", path.string().c_str());
+		ErrorLog("Font", "Font file does not exist: %s", path.string().c_str());
 		return false;
 	}
 
@@ -186,18 +186,17 @@ bool Resources::loadTTFont(const fs::path path, int fontSize)
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
 
-    int atlasWidth = 0;
-    int atlasHeight = 0;
+	int atlasWidth = 0;
+	int atlasHeight = 0;
 	float padding = 1.0f; // Padding between glyphs in the atlas
 
 	fonts[fontName].addSize(fontSize);
 
-    for (unsigned char c = 0; c < 128; c++)
-    {
+	for (unsigned char c = 0; c < 128; c++)
+	{
 		if (FT_Load_Char(face, c, FT_LOAD_RENDER))
 		{
 			WarnLog("Font", "ERROR::FREETYTPE: Failed to load Glyph");
-			//std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
 			continue;
 		}
 
@@ -212,22 +211,24 @@ bool Resources::loadTTFont(const fs::path path, int fontSize)
 
 		atlasWidth += bmp.width + padding;
 		atlasHeight = std::max(atlasHeight, (int)bmp.rows);
-    }
+	}
 
-    auto bufferSize = atlasWidth * atlasHeight;
+	atlasHeight += padding * 2;
+
+	auto bufferSize = atlasWidth * atlasHeight;
 	unsigned char* buffer = new unsigned char[bufferSize]();
 
 	// pack glyphs
 	// Rework to grid packing algorithm to make better use of space
 	int xOffset = 0;
-	for (unsigned char c = 0; c < 128; c++)
+	for (unsigned char c = 32; c < 128; c++)
 	{
 		if (FT_Load_Char(face, c, FT_LOAD_RENDER)) continue;
 		auto& bmp = face->glyph->bitmap;
-        
+		
 		for (unsigned int row = 0; row < bmp.rows; row++)
 		{
-			auto dst = row * atlasWidth + xOffset;
+			auto dst = (row + (int) padding) * atlasWidth + xOffset;
 			auto src = row * bmp.width;
 
 			memcpy(buffer + dst, bmp.buffer + src, bmp.width);
@@ -235,41 +236,44 @@ bool Resources::loadTTFont(const fs::path path, int fontSize)
 
 		// Add some debug tool to test different fontSizes and see how the UVs are calculated
 		// Reduce by half-pixel to avoid bleeding into neighboring glyphs
-        float offset = 0.5f;
+		float offset = 0.5f;
 		fonts[fontName].size(fontSize)->glyphs[c].uvs.u0 = (float)(xOffset - offset) / (float)atlasWidth;
 		fonts[fontName].size(fontSize)->glyphs[c].uvs.u1 = (float)(xOffset + bmp.width + offset) / (float)atlasWidth;
 		fonts[fontName].size(fontSize)->glyphs[c].uvs.v0 = 0.0f;
-		fonts[fontName].size(fontSize)->glyphs[c].uvs.v1 = (float)(bmp.rows) / (float)atlasHeight;
+		fonts[fontName].size(fontSize)->glyphs[c].uvs.v1 = (float)(bmp.rows + padding) / (float) (atlasHeight - padding);
 
 		xOffset += bmp.width + padding;
 	}
 
-    Texture2D glyphTexture = TextureBuilder()
+	Texture2D glyphTexture = TextureBuilder()
 		.setFormat(GL_RED)
 		.setInternalFormat(GL_RED)
-        .setFiltering(GL_LINEAR)
-        .setWrapping(GL_CLAMP_TO_EDGE)
-        .build(atlasWidth, atlasHeight, buffer);
+		.setFiltering(GL_LINEAR)
+		.setWrapping(GL_CLAMP_TO_EDGE)
+		.build(atlasWidth, atlasHeight, buffer);
 
-    auto atlasTextureName = fontName + "_" + std::to_string(fontSize);
+	auto atlasTextureName = fontName + "_" + std::to_string(fontSize);
 
 	fonts[fontName].size(fontSize)->atlas = glyphTexture.id;
 	saveTexture(std::move(glyphTexture), atlasTextureName);
 
-	InfoLog("Font", "Font %s size: %d loaded succesfully", fontName.c_str(), fontSize);
-    delete[] buffer;
+	// Save font atlasses to files for testing
+	//ServiceLocator::get<IFileService>()->savePng(file_util::createPath("assets", atlasTextureName + ".png").string(), atlasWidth, atlasHeight, buffer);
 
-    return true;
+	InfoLog("Font", "Font %s size: %d loaded succesfully", fontName.c_str(), fontSize);
+	delete[] buffer;
+
+	return true;
 }
 
 Font* Resources::font(const std::string& fontName)
 {
-    if (!fonts.contains(fontName))
-    {
+	if (!fonts.contains(fontName))
+	{
 		WarnLog("Font", "Font \"%s\" doesn't exist!", fontName.c_str());
 		return &fonts["default"];
-    }
-    return &fonts[fontName];
+	}
+	return &fonts[fontName];
 }
 
 MIX_Audio* Resources::loadClip(const std::filesystem::path& path, const std::string& name)
@@ -314,22 +318,22 @@ MIX_Audio* Resources::loadMusic(const std::filesystem::path& path, const std::st
 
 void Resources::addSharedMat(const std::string& handle, std::shared_ptr<Material> material)
 {
-    sharedMaterials[handle] = material;
+	sharedMaterials[handle] = material;
 }
 
 std::shared_ptr<Material> Resources::sharedMat(const std::string& handle)
 {
-    if (sharedMaterials.contains(handle))
-    {
-        return sharedMaterials[handle];
-    }
+	if (sharedMaterials.contains(handle))
+	{
+		return sharedMaterials[handle];
+	}
 
-    return sharedMaterials[defaultMaterial];
+	return sharedMaterials[defaultMaterial];
 }
 
 Material Resources::copySharedMat(const std::string& handle)
 {
-    return *sharedMaterials.at(handle).get();
+	return *sharedMaterials.at(handle).get();
 }
 
 void Resources::quit() { }

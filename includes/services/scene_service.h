@@ -37,6 +37,7 @@ public:
 	virtual void draw() = 0;
 	virtual void quit() = 0;
 
+
 	template<typename T>
 	void registerScene(std::string name)
 	{
@@ -82,7 +83,7 @@ protected:
 	void addScene(TransitionRequest req) override
 	{
 		auto& newScene = scenes[req.sceneId];
-		assert(newScene != nullptr); // Forgot to register scene
+		assert(newScene != nullptr && "Forgot to register Scene!"); // Forgot to register scene
 
 		m_activeScenes.push_back(newScene);
 		newScene->start();

@@ -32,17 +32,32 @@ UIRect HorizontalLayout::layout(UIWidget& self, const UIRect& parentRect, int in
 	UIRect rect{ 0 };
 	rect.size = self.localRect.size * parentRect.size;
 
-	if (expand == Expand::Both)
-		rect.size.y = parentRect.size.y - margin.top - margin.bottom;
+	switch (expand)
+	{
+	case Expand::None:
+		break;
+	case Expand::Both:
+		rect.size.y = parentRect.size.y;
+		break;
+	case Expand::Horiz:
+		rect.size.x = parentRect.size.x;
+		break;
+	case Expand::Vert:
+		rect.size.x = parentRect.size.y;
+		break;
+	}
 
+	int childrenSize = self.parent.lock()->visibleChildren().size();
 	if (fit)
 	{
-		int childrenSize = self.parent.lock()->visibleChildren().size();
 		float availableWidth = parentRect.size.x / childrenSize;
 		float defSpacing = spacing * (childrenSize - 1) / childrenSize;
 
 		rect.size.x = availableWidth - defSpacing - margin.right;
 	}
+
+	rect.size.x -= (margin.left + margin.right) / childrenSize;
+	rect.size.y -= margin.top + margin.bottom;
 
 	if (self.parent.expired() || index == 0)
 	{
@@ -69,17 +84,32 @@ UIRect VerticalLayout::layout(UIWidget& self, const UIRect& parentRect, int inde
 	UIRect rect{ 0 };
 	rect.size = self.localRect.size * parentRect.size;
 
-	if (expand == Expand::Both)
-		rect.size.x = parentRect.size.x - margin.left - margin.right;
-	
+	switch (expand)
+	{
+	case Expand::None:
+		break;
+	case Expand::Both:
+		rect.size.x = parentRect.size.x;
+		break;
+	case Expand::Horiz:
+		rect.size.x = parentRect.size.x;
+		break;
+	case Expand::Vert:
+		rect.size.y = parentRect.size.y;
+		break;
+	}
+
+	int childrenSize = self.parent.lock()->visibleChildren().size();
 	if (fit)
 	{
-		int childrenSize = self.parent.lock()->visibleChildren().size();
 		float availableHeight = parentRect.size.y / childrenSize;
 		float defSpacing = spacing * (childrenSize - 1) / childrenSize;
 
 		rect.size.y = availableHeight - defSpacing - margin.bottom;
 	}
+
+	rect.size.x -= margin.left + margin.right;
+	rect.size.y -= (margin.top + margin.bottom) / childrenSize;
 
 	if (self.parent.expired() || index == 0)
 	{

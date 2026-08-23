@@ -13,7 +13,7 @@ void StartGameState::enter(core::IContext& ctx)
 	core::Game& game = dynamic_cast<core::Game&>(ctx);
 	auto ui = ServiceLocator::get<IUIService>();
 
-	ui->widget("main_menu_window")->visible = false;
+	ui->widget("main_menu_window").lock()->visible = false;
 
 	ServiceLocator::get<ISceneService>()->requestTransition<WorldMapScene>(TransitionMode::Additive);
 }

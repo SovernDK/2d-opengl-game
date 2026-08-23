@@ -21,6 +21,8 @@
 
 #include <profiler.h>
 #include <scenes/narrative_event_scene.h>
+#include <scenes/character_sheet_scene.h>
+#include <scenes/game_scene.h>
 
 using namespace rmui;
 using namespace core;
@@ -66,6 +68,7 @@ void MainMenuScene::start()
 		 .setLocSize(0.1f, 0.3f)
 		 .setParent(window)
 		 .setStyle("mm_button")
+		 .setAlpha(0)
 		 .setText("Settings")
 		 .build("settings_btn");*/
 
@@ -110,13 +113,18 @@ void MainMenuScene::start()
 	{
 		newGameBtn->label->play<FadeOut>(.7f)
 			->setCurve<feel::QuadCurve>(feel::EasingType::In)
+			->addListener(Listener::START, [&]() { newGameBtn->interactive = false; })
 			->addListener(Listener::EXIT, [&]() {
-			ServiceLocator::get<ISceneService>()->requestRemoveLast();
-			ServiceLocator::get<ISceneService>()->requestTransition<NarrativeEventScene>(TransitionMode::Additive);
-		});
+				ServiceLocator::get<ISceneService>()->requestRemoveLast();
+				ServiceLocator::get<ISceneService>()->requestTransition<GameScene>(TransitionMode::Additive);
+				ServiceLocator::get<ISceneService>()->requestTransition<NarrativeEventScene>(TransitionMode::Additive);
+				ServiceLocator::get<ISceneService>()->requestTransition<CharacterSheetScene>(TransitionMode::Additive);
+			});
 
-		loadGameBtn->label->play<FadeOut>(.6f)->setCurve<feel::QuadCurve>(feel::EasingType::In);
-		exitGameBtn->label->play<FadeOut>(.5f)->setCurve<feel::QuadCurve>(feel::EasingType::In);
+		loadGameBtn->label->play<FadeOut>(.6f)->setCurve<feel::QuadCurve>(feel::EasingType::In)
+			->addListener(Listener::START, [&]() { loadGameBtn->interactive = false; });
+		exitGameBtn->label->play<FadeOut>(.5f)->setCurve<feel::QuadCurve>(feel::EasingType::In)
+			->addListener(Listener::START, [&]() { exitGameBtn->interactive = false; });
 
 		glm::vec2 target{ -50.0f, 0.0f };
 		newGameBtn->play<MoveTo>( .7f, glm::vec2{ -70.0f, 0.0f })->setCurve<feel::QuadCurve>(feel::EasingType::In);

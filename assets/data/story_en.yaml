@@ -1,0 +1,85 @@
+config:
+  start_room: Tomb Chamber
+  start_par: game_start
+
+rooms:
+  - title: Tomb Chamber ##Event id must be unique
+    header: paragraph.head.tomb_chamber
+    paragraph: tomb_chamber_enter
+    tags: [start]
+    directions: #Allowed movement directions
+      - north: Tomb Antechamber
+
+  - title: Tomb Antechamber
+    header: paragraph.head.tomb_antechamber
+    paragraph: tomb_antechamber_enter
+    tags: [darkness]
+    directions:
+      - north: Hall of White Cloth
+      - south: Tomb Chamber
+
+  - title: Hall of White Cloth
+    header: paragraph.head.tomb_chamber
+    paragraph: hall_of_white_cloth_enter
+    directions:
+      - west: Hall of White Cloth West
+      - east: Hall of White Cloth East
+      - south: Tomb Antechamber
+
+  - title: Hall of White Cloth West
+    header: paragraph.head.tomb_chamber
+    paragraph: hall_of_white_cloth_enter
+    directions:
+      - east: Hall of White Cloth
+
+  - title: Hall of White Cloth East
+    header: paragraph.head.tomb_chamber
+    paragraph: hall_of_white_cloth_enter
+    directions:
+      - west: Hall of White Cloth
+
+paragraphs:
+  - title: game_start
+    text: >
+      You wake up. Head throbbing.[br]
+      Circular burial vault surrounds You.[br]
+      On the floor, stone slab of sarcophagus lies[br]
+      broken into three pieces.
+    choices:
+      - { text: "Inspect sarcophagus", goto: tomb_chamber_enter_p1 }
+      - { text: "Pickup the pieces", goto: tomb_chamber_enter_p2, give_item: arming_sword, flag: tomb_chamber.pieces_pickedup }
+
+  - title: tomb_chamber_enter
+    text: >
+      Circular burial vault surrounds You.[br]
+      On the floor, stone slab of sarcophagus lies[br]
+      broken into three pieces.
+    choices:
+      - { text: "Inspect sarcophagus", goto: tomb_chamber_enter_p1 }
+      - { text: "Pickup the pieces", goto: tomb_chamber_enter_p2 }
+
+  - title: tomb_chamber_enter_p1
+    text: >
+      Nothing remains, only letters scribbled in unknown language
+    choices:
+      - { text: "Continue", goto: tomb_chamber_enter }
+
+  - title: tomb_chamber_enter_p2
+    text: >
+      Pieces are to heavy for you to carry.
+    choices:
+      - { text: "Continue", goto: tomb_chamber_enter }
+
+  - title: tomb_antechamber_enter
+    text: >
+      Moonlight seeps through shaft in the ceiling, revealing[br]
+      Corpse leaning agains the wall, a [[item=torch]] in his cold hand.[br]
+    choices:
+
+  - title: hall_of_white_cloth_enter
+    text: >
+      Countless niches and alcoves hold mumified remains[br]
+      tightly wrapped with yellow bandages.[br]
+      To the west and east low tunnels extend into darkness.[br]
+      Straight ahead massive stone door covered with runes stands.
+    choices:

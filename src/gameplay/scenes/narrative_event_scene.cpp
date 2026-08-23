@@ -3,8 +3,11 @@
 
 #include "SDL3/SDL.h"
 
+#include "ecs/base_components.h"
+
 #include "core/game.h"
 #include "core/texts.h"
+#include "core/globals/gdata.h"
 #include "services/ui_service.h"
 
 #include "rmui/ui_anim.h"
@@ -16,6 +19,7 @@
 
 #include "utility/file_util.h"
 #include "gameplay/historia.h"
+
 #include <magic_enum/magic_enum.hpp>
 
 using namespace rmui;
@@ -28,79 +32,95 @@ void NarrativeEventScene::start()
 	
 	ui = ServiceLocator::get<IUIService>();
 
-	if(!Resources::textureExist("open_book"))
-		Resources::loadTexture(core::GConfig.fromAssets("open_book.png").string(), "open_book");
-	if (!Resources::textureExist("landscape"))
+	auto rightPageWin = ui->widget("book_right_win");
+	if(rightPageWin.expired())
 	{
-		Resources::loadTexture(core::GConfig.fromAssets("landscape.png").string(), "landscape");
-		bgTex = Resources::texture("open_book")->id;
+		ErrorLog("NarrativeEventScene", "Failed to find right page window!");
+		return;
 	}
 
-	bookWindow = ui->createWindow()
-		.setLocPos(0.525f, 0.49f)
-		.setLocSize(0.83f, 0.86f)
-		.setPivot(UIAnchor::Center)
-		.setStyle("book_window")
-		.setAlpha(0)
-		.build("book_window");
-
-	leftPage = ui->createWindow()
+	header = ui->createLabel()
+		.setLocPos(UIAnchor::Top_Left)
 		.setPivot(UIAnchor::Top_Left)
-		.setStyle("page_window")
-		.setParent(bookWindow)
-		.setAlpha(0)
-		.build("left_page_win");
-
-	rightPage = ui->createWindow()
-		.setPivot(UIAnchor::Top_Right)
-		.setStyle("page_window")
-		.setParent(bookWindow)
-		.setAlpha(0)
-		.build("right_page_win");
-
-	header = ui->createImage()
-		.setPivot(UIAnchor::Top_Left)
+		.setLocSize(1.0f, .1f)
+		.setParent(rightPageWin.lock())
+		.setText("")
 		.setStyle("page_header")
-		.setParent(rightPage)
-		.setImage(Resources::texture("landscape")->id)
 		.build("right_page_header");
 
 	contentUI = ui->createMultiLabel()
+		.setLocPos(UIAnchor::Top_Left)
 		.setPivot(UIAnchor::Top_Left)
-		.setParent(rightPage)
-		.setText(m_ctx->story()->currentContent())
+		.setLocSize(1.0f, .6f)
+		.setParent(rightPageWin.lock())
+		.setText("")
+		.setStyle("page_content")
 		.build("right_page_content");
 	
 	// Choices
-	choices = ui->createWindow()
-		.setStyle("page_window")
-		.setParent(rightPage)
+	actions = ui->createWindow()
+		.setLocPos(UIAnchor::Top_Left)
+		.setPivot(UIAnchor::Top_Left)
+		.setLocSize(1.0f, .3f)
+		.setParent(rightPageWin.lock())
 		.setAlpha(0)
+		.setStyle("rpage_actions")
+		.build("right_page_actions");
+
+	choices = ui->createWindow()
+		.setLocPos(UIAnchor::Top_Left)
+		.setPivot(UIAnchor::Top_Left)
+		.setLocSize(.6f, 1.0f)
+		.setParent(actions)
+		.setAlpha(0)
+		.setStyle("rpage_choices")
 		.build("right_page_choices");
 
-	int index = 0;
-	for (auto& direction : m_ctx->story()->currentRoom().directions)
-	{
-		auto choiceBtn = ui->createButton()
-			.setStyle("choice_button")
-			.setParent(choices)
-			.setText(magic_enum::enum_name<EDirection>(direction.dir).data())
-			.setAlpha(0)
-			.addOnClick([&](UIWidget* widget)
-			{
-				m_ctx->story()->goTo(direction.gotoId);
-				updateRoom = true;
-			})
-			.build("choice");
+	directions = ui->createWindow()
+		.setLocPos(UIAnchor::Top_Left)
+		.setPivot(UIAnchor::Top_Left)
+		.setLocSize(.4f, 1.0f)
+		.setParent(actions)
+		.setAlpha(0)
+		.setStyle("rpage_directions")
+		.build("right_page_directions");
 
-		directionBtns.push_back(std::move(choiceBtn));
-		index++;
-	}
+	// Direction buttons
+	auto directionBtn = ui->createButton()
+		.setLocPos(UIAnchor::Top_Left)
+		.setPivot(UIAnchor::Top_Left)
+		.setLocSize(1.0f, .25f)
+		.setParent(directions)
+		.setAlpha(0)
+		.setStyle("page_choice_btn");
 
-	for (auto& child : choices->children())
-	{
-		std::static_pointer_cast<UIButton>(child)->label->play<FadeIn>(0.5f);
-	}
+	auto north = directionBtn
+		.setText(core::GTexts.get("paragraph.north"))
+		.build("btn_north");
+
+	auto west = directionBtn
+		.setText(core::GTexts.get("paragraph.west"))
+		.build("btn_west");
+
+	auto east = directionBtn
+		.setText(core::GTexts.get("paragraph.east"))
+		.build("btn_east");
+
+	auto south = directionBtn
+		.setText(core::GTexts.get("paragraph.south"))
+		.build("btn_south");
+
+	directionBtns[EDirection::NORTH] = north;
+	directionBtns[EDirection::WEST]  = west;
+	directionBtns[EDirection::EAST]  = east;
+	directionBtns[EDirection::SOUTH] = south;
+
+	directionBtns[EDirection::NORTH]->label->play<FadeIn>(.25f);
+	directionBtns[EDirection::WEST]->label->play<FadeIn>(.25f);
+	directionBtns[EDirection::EAST]->label->play<FadeIn>(.25f);
+	directionBtns[EDirection::SOUTH]->label->play<FadeIn>(.25f);
+
+	updateRoom = true;
 }
 
 void NarrativeEventScene::update(float dt)
@@ -109,6 +129,14 @@ void NarrativeEventScene::update(float dt)
 
 	if (updateRoom)
 	{
+		header->play<FadeOut>(.25f)->addListener(Listener::EXIT, [&]()
+		{
+			header
+				->tryGetComponent<UIText>()
+				->text = m_ctx->story()->currentHeader();
+		});
+		header->play<FadeIn>(.25f);
+
 		contentUI->play<FadeOut>(.25f)->addListener(Listener::EXIT, [&]()
 		{
 			contentUI
@@ -117,59 +145,92 @@ void NarrativeEventScene::update(float dt)
 		});
 		contentUI->play<FadeIn>(.25f);
 
-		for (auto& btn : directionBtns)
+		for (auto& btn : choiceBtns)
 		{
 			btn->label->play<FadeOut>(.25f);
 		}
 
+		// Choices
 		m_ctx->callback(.25f, [&]()
 		{
 			int index = 0;
-			for (auto& direction : m_ctx->story()->currentRoom().directions)
+			for (auto& choice : m_ctx->story()->currParagraph().choices)
 			{
-				if (index < directionBtns.size())
+				if (index < choiceBtns.size())
 				{
-					directionBtns[index]->setText(magic_enum::enum_name<EDirection>(direction.dir).data());
-					directionBtns[index]->interaction->clearOnClick();
-					directionBtns[index]->interaction->addOnClick([&](UIWidget* widget)
+					choiceBtns[index]->setText(choice.content);
+					choiceBtns[index]->visible = true;
+					choiceBtns[index]->interaction->setOnClick([&, ch = choice](UIWidget* self)
 					{
-						m_ctx->story()->goTo(direction.gotoId);
+						for (const auto& eff : ch.effects)
+						{
+							applyEffect(eff);
+						}
+						m_ctx->story()->goTo(ch.gotoId);
 						updateRoom = true;
 					});
-					directionBtns[index]->visible = true;
 				}
 				else
 				{
 					auto choiceBtn = ui->createButton()
-						.setStyle("choice_button")
+						.setLocPos(UIAnchor::Top_Left)
+						.setPivot(UIAnchor::Top_Left)
+						.setLocSize(1.0f, .25f)
 						.setParent(choices)
-						.setText(magic_enum::enum_name<EDirection>(direction.dir).data())
+						.setText(choice.content)
 						.setAlpha(0)
-						.addOnClick([&](UIWidget* widget)
+						.setStyle("page_choice_btn")
+						.addOnClick([&, ch = choice](UIWidget* self)
 						{
-							m_ctx->story()->goTo(direction.gotoId);
+							for (const auto& eff : ch.effects)
+							{
+								applyEffect(eff);
+							}
+							m_ctx->story()->goTo(ch.gotoId);
 							updateRoom = true;
 						})
-						.build("choice");
-					directionBtns.push_back(choiceBtn);
+						.build(std::format("choice_{}", index));
+					choiceBtns.push_back(choiceBtn);
 				}
 
 				index++;
 			}
 
-			for (int i = index; i < directionBtns.size(); i++)
+			for (int i = index; i < choiceBtns.size(); i++)
 			{
-				directionBtns[i]->visible = false;
+				choiceBtns[i]->visible = false;
 			}
 
 			choices->dirtyUpdate();
 
-			for (auto& btn : directionBtns)
+			for (auto& btn : choiceBtns)
 			{
 				if (!btn->visible) continue;
 				btn->label->play<FadeIn>(.25f);
 			}
 		});
+
+		// Directions
+		auto& room = m_ctx->story()->currentRoom();
+		for (int i = 0; i < (int) EDirection::COUNT; i++)
+		{
+			auto dir = (EDirection) i;
+			if (room.directions.contains(dir))
+			{
+				directionBtns[dir]->setInteractive(true);
+				directionBtns[dir]->interaction->setOnClick([&, direction = dir](UIWidget* widget)
+				{
+					auto id = room.directions.at(direction).gotoId;
+					m_ctx->story()->move(id);
+					updateRoom = true;
+				});
+			}
+			else
+			{
+				directionBtns[dir]->interaction->clearOnClick();
+				directionBtns[dir]->setInteractive(false);
+			}
+		}
 
 		updateRoom = false;
 	}
@@ -178,23 +239,31 @@ void NarrativeEventScene::update(float dt)
 void NarrativeEventScene::draw()
 {
 	IScene::draw();
-
-	Canvas2D::setDepth(BACKGROUND_Z);
-	Canvas2D::setColor(WHITE);
-	Canvas2D::setBlend(BlendMode::Alpha);
-	Canvas2D::drawImage(bgTex, { 0, 0, 1920, 1080 }, uvs);
-	Canvas2D::reset();
 }
 
 void NarrativeEventScene::unload()
 {
 	IScene::unload();
 
-	ui->destroy("book_window");
+	header.reset();
+	contentUI.reset();
+	choices.reset();
+
+	directionBtns.clear();
 }
 
 void NarrativeEventScene::quit()
 {
 	IScene::quit();
+}
 
+void NarrativeEventScene::applyEffect(const ChoiceEffect& effect)
+{
+	switch (effect.type)
+	{
+	case EEffectType::GIVE_ITEM:
+		auto itemId = core::GData.interner.intern(effect.params.at(YAML_PAR_GIVE_ITEM));
+		m_ctx->playerEntity().getMod<ecs::Inventory>()->add(itemId, 1);
+		break;
+	}
 }

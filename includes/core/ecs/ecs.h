@@ -43,20 +43,20 @@ namespace ecs
 		Entity(Entity&&) = default;
 		Entity& operator=(Entity&&) = default;
 
-		template<typename T>
-		Entity& add(T&& copyObj);
+		template<typename T> Entity& add(T&& copyObj);
+		template<typename T> Entity& add(T& copyObj);
+
+		template<typename T> Entity& remove();
 
 		Entity& childOf(EntityId parentId);
 		Entity& childOf(Entity& parent);
 
-		template<typename T>
-		const T* const get();
-
-		template<typename T>
-		T* const getMod();
+		template<typename T> const T* const get();
+		template<typename T> T* const getMod();
 
 		Entity& enable();
 		Entity& disable();
+
 		void destroy();
 
 		const std::vector<EntityId>& children();
@@ -112,19 +112,26 @@ namespace ecs
 	private:
 		std::unordered_map<EntityId, Entity> entities;
 		std::unordered_map<std::string, Entity*> lookupTable;
+		mem::flat_map<std::type_index, std::vector<EntityId>> deletedComponents;
+
 		std::unordered_map<std::type_index, std::shared_ptr<ITypeBucket>> components;
 		std::unordered_set<EntityId> deletedEntities;
 
-		std::unordered_map<EntityId, std::vector<EntityId>> childrenOf;
-		// Key is child Id, value is Parent Id
-		std::unordered_map<EntityId, EntityId> parentOf;
+		using ParentId = EntityId; 
+		using ChildId = EntityId;
+		std::unordered_map<ParentId, std::vector<ChildId>> childrenOf;
+		std::unordered_map<ChildId, ParentId> parentOf;
 
 		std::vector<std::unique_ptr<ISystem>> systems;
+
+		mem::flat_map<std::type_index, std::vector<std::function<void()>>> onAddComponent;
+		mem::flat_map<std::type_index, std::vector<std::function<void()>>> onRemoveComponent;
 
 		IdPool<EntityId> idPool;
 	public:
 		ECSWorld() 
 		{
+			//Emplace empty entity with id 0
 			entities.emplace(0, Entity(this, 0));
 		};
 		~ECSWorld() = default;
@@ -142,8 +149,10 @@ namespace ecs
 
 		void destroy(Entity& e);
 		void destroy(EntityId id);
+
 		void enable(EntityId id);
 		void enable(Entity& e);
+
 		void disable(EntityId id);
 		void disable(Entity& e);
 
@@ -154,36 +163,28 @@ namespace ecs
 		void print();
 		std::string name(EntityId id);
 
-		template<typename T>
-		void addComponent(EntityId id, T&& copyObj);
+		template<typename T> void addComponent(EntityId id, T&& copyObj);
+		template<typename T> void addComponent(EntityId id, T& obj);
+		template<typename T> void addComponent(EntityId id);
 
-		template<typename T>
-		void addComponent(EntityId id);
+		template<typename T> void removeComponent(EntityId id, std::type_index type);
 
 		void setChildOf(EntityId parent, EntityId child);
 		const std::vector<EntityId>& getChildrenOf(EntityId parentId);
 
-		template<typename T>
-		const T* const get(EntityId id);
-
-		template<typename T>
-		T* const getMod(EntityId id);
+		template<typename T> const T* const get(EntityId id);
+		template<typename T> T* const getMod(EntityId id);
 
 		void each(std::function<void(Entity&)> fn);
 		void each(bool hasParent, std::function<void(Entity&)> fn);
 
-		template<typename... Ts, typename Fn>
-		void view(Fn fn);
-
-		template<typename... Ts, typename Fn>
-		void system(Fn fn);
-
-		template<typename T>
-		T* isType(const std::pair<std::type_index, void*>& entry);
-
-		template<typename T>
-		TypeBucket<T>* getType();
+		template<typename... Ts, typename Fn> void view(Fn fn);
+		template<typename... Ts, typename Fn> void system(Fn fn);
+		template<typename T> T* isType(const std::pair<std::type_index, void*>& entry);
+		template<typename T> TypeBucket<T>* getType();
 	
+		template<typename T> void onAdded(std::function<void()> func);
+		template<typename T> void onRemoved(std::function<void()> func);
 	private:
 		void processDestroy(EntityId id);
 	};
@@ -215,6 +216,20 @@ namespace ecs
 	inline Entity& Entity::add(T&& obj)
 	{
 		world->addComponent<T>(id, std::forward<T>(obj));
+		return *this;
+	}
+
+	template<typename T>
+	inline Entity& Entity::add(T& obj)
+	{
+		world->addComponent<T>(id, obj);
+		return *this;
+	}
+
+	template<typename T> 
+	inline Entity& Entity::remove()
+	{
+		world->removeComponent<T>(id, typeid(T));
 		return *this;
 	}
 
@@ -402,6 +417,19 @@ namespace ecs
 			processDestroy(id);
 		}
 
+		for (auto& [type, ids] : deletedComponents)
+		{
+			const auto& typeBucket = components[type];
+			for (auto& id : ids)
+			{
+				typeBucket->removeById(id);
+			}
+
+			for(auto& func : onRemoveComponent[type])
+				func();
+					
+		}
+
 		deletedEntities.clear();
 	}
 
@@ -470,6 +498,26 @@ namespace ecs
 		auto [it, _] = components.try_emplace(typeid(T), std::make_unique<TypeBucket<T>>());
 		auto* bucket = static_cast<TypeBucket<T>*>(it->second.get());
 		bucket->items[id] = std::make_unique<T>(std::forward<T>(obj));
+
+		for (auto& func : onAddComponent[typeid(T)])
+			func();
+	};
+
+	template<typename T>
+	inline void ECSWorld::addComponent(EntityId id, T& obj)
+	{
+		if (id == 0)
+		{
+			ErrorLog("ECS", "Cannot add component %s to entity with invalid id 0!", typeid(T).name());
+			return;
+		}
+
+		auto [it, _] = components.try_emplace(typeid(T), std::make_unique<TypeBucket<T>>());
+		auto* bucket = static_cast<TypeBucket<T>*>(it->second.get());
+		bucket->items[id] = std::make_unique<T>(obj);
+
+		for (auto& func : onAddComponent[typeid(T)])
+			func();
 	};
 
 	template<typename T>
@@ -485,7 +533,20 @@ namespace ecs
 		auto [it, _] = components.try_emplace(typeid(T), std::make_unique<TypeBucket<T>>());
 		auto* bucket = static_cast<TypeBucket<T>*>(it->second.get());
 		bucket->items[id] = std::make_unique<T>();
+
+		for (auto& func : onAddComponent[typeid(T)])
+			func();
 	};
+
+	template<typename T> 
+	inline void ECSWorld::removeComponent(EntityId id, std::type_index type)
+	{
+		auto bucket = std::static_pointer_cast<TypeBucket<T>>(components.at(typeid(T)));
+		if (bucket->items.contains(id))
+		{
+			deletedComponents[type].push_back(id);
+		}
+	}
 
 	inline void ECSWorld::setChildOf(EntityId parentId, EntityId childId)
 	{
@@ -584,6 +645,18 @@ namespace ecs
 		auto it = components.find(typeid(T));
 		if (it == components.end()) return nullptr;
 		return static_cast<TypeBucket<T>*>(it->second.get());
+	}
+
+	template<typename T> 
+	inline void ECSWorld::onAdded(std::function<void()> func)
+	{
+		onAddComponent[typeid(T)].push_back(func);
+	}
+
+	template<typename T> 
+	inline void ECSWorld::onRemoved(std::function<void()> func)
+	{
+		onRemoveComponent[typeid(T)].push_back(func);
 	}
 
 	inline void ECSWorld::processDestroy(EntityId id)

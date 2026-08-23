@@ -36,6 +36,7 @@ enum class CommandType
 struct RenderCommand
 {
 	CommandType type			= CommandType::Sprite;
+	bool isDynamic              = false;
 	int depth					= 0;
 	Mesh* mesh					= nullptr;
 	MaterialInstance* instance	= nullptr;

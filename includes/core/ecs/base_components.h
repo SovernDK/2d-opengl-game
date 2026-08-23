@@ -2,13 +2,21 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
+#include "memory/flat_map.h"
 #include "graphics/material.h"
+
 #include "core/time/timer.h"
+#include "globals/data_defs.h"
+
 #include "utility/gradient.h"
 #include "utility/feel.h"
+#include "utility/string_interner.h"
 
+#include "debug/logging.h"
 #include "resources.h"
+
 #include <config.h>
+#include <magic_enum/magic_enum.hpp>
 
 using Depth = int;
 
@@ -64,6 +72,8 @@ namespace ecs
 		glm::vec2 size = glm::vec2(32);
 		SDL_Color color = WHITE;
 		Depth depth = 1;
+		bool isClipping = false;
+		glm::vec4 clipping{};
 
 		MaterialInstance material = MaterialInstance(Resources::sharedMat(core::GConfig.shaders.def));
 	};
@@ -169,20 +179,128 @@ namespace ecs
 
 	};
 
-	struct Item
+	struct InventorySlot
 	{
-		std::string name;
+		ItemID itemId;
+		unsigned int quantity = 0;
 	};
 
 	struct Inventory
 	{
-		int cap = 10;
-		std::vector<Item> data;
+		bool updated = false;
+		unsigned int cap = 10;
+		std::vector<InventorySlot> items;
+
+		void add(ItemID itemId, unsigned int quantity)
+		{
+			updated = true;
+
+			for (auto& slot : items)
+			{
+				if (slot.itemId == itemId)
+				{
+					slot.quantity += quantity;
+					return;
+				}
+			}
+
+			if (items.size() < cap)
+			{
+				items.push_back({ itemId, quantity });
+			}
+			else
+			{
+				ErrorLog("Inventory", "Cannot add item [ID=%d] to inventory. Inventory is full!", itemId);
+			}
+		}
+
+		void subtract(int slotId, unsigned int quantity)
+		{
+			updated = true;
+
+			if (slotId < 0 || slotId >= items.size())
+			{
+				ErrorLog("Inventory", "Cannot subtract item from inventory. Invalid slot ID: %d", slotId);
+				return;
+			}
+
+			items[slotId].quantity -= quantity;
+			if(items[slotId].quantity < 1)
+			{
+				items.erase(items.begin() + slotId);
+			}
+		}
+			
+		void remove(int slotId)
+		{
+			updated = true;
+
+			if (slotId < 0 || slotId >= items.size())
+			{
+				ErrorLog("Inventory", "Cannot remove item from inventory. Invalid slot ID: %d", slotId);
+				return;
+			}
+			items.erase(items.begin() + slotId);
+		}
+	};
+
+	struct EquipmentSlot
+	{
+		EquipSlotId id;
+		ItemID itemId = ITEMID_EMPTY;
+	};
+
+	struct Equipment
+	{
+		std::vector<EquipmentSlot> slots
+		{
+			{
+				{ EquipSlotId::WEAPON },
+				{ EquipSlotId::SIDE_WEAPON },
+				{ EquipSlotId::HEAD },
+				{ EquipSlotId::BODY },
+				{ EquipSlotId::FEET }
+			}
+		};
+
+		const EquipmentSlot& slot(EquipSlotId slotId) const
+		{
+			for (auto& slot : slots)
+			{
+				if (slot.id == slotId)
+					return slot;
+			}
+
+			auto slotName = magic_enum::enum_name(slotId);
+			ErrorLog("Equipment", "Slot %s not found!", slotName.data());
+			throw std::runtime_error("Slot not found");
+		}
+
+		void equip(EquipSlotId slotId, ItemID itemId)
+		{
+			for (auto& slot : slots)
+			{
+				if (slot.id == slotId)
+				{
+					slot.itemId = itemId;
+				}
+			}
+		}
+
+		void unequip(EquipSlotId slotId)
+		{
+			for (auto& slot : slots)
+			{
+				if (slot.id == slotId)
+				{
+					slot.itemId = ITEMID_EMPTY;
+				}
+			}
+		}
 	};
 
 	struct Attribute
 	{
-		std::string name;
 		float value = 1.0f;
 	};
 
@@ -191,8 +309,8 @@ namespace ecs
 		Attribute hp;
 		Attribute maxHp;
 
-		float minValue = 1.0f;
-		float maxValue = 100.0f;
+		const float minValue = 1.0f;
+		const float maxValue = 100.0f;
 
 		Attribute strength;
 		Attribute agility;
@@ -203,5 +321,49 @@ namespace ecs
 	struct Enemy
 	{
 		std::string name = "Enemy";
+	};
+
+	// Actions
+	// Inventory/Equipment actions
+	struct InvUseItemAction
+	{
+		int invSlotId;
+		ItemID id;
+		ItemType type;
+	};
+
+	struct AddItemAction
+	{
+		ItemID itemId;
+		unsigned int quantity = 1;
+	};
+
+	struct SubtractItemAction
+	{
+		int invSlotId;
+		unsigned int quantity = 1;
+	};
+
+	struct EquipAction
+	{
+		EquipSlotId slotId;
+		ItemID itemId;
+	};
+
+	struct InvEquipAction
+	{
+		int inventoryId;
+		EquipSlotId slotId;
+	};
+
+	struct UnequipAction
+	{
+		EquipSlotId slotId;
+	};
+
+	// Graph map
+	struct MapNode
+	{
+
 	};
 }

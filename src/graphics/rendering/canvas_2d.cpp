@@ -21,6 +21,7 @@ bool Canvas2D::isClipping		= false;
 SDL_Color Canvas2D::m_color		= { 255,255,255,255 };
 Depth Canvas2D::m_depth			= 1.0f;
 BlendMode Canvas2D::m_blendMode = BlendMode::None;
+bool Canvas2D::m_isDynamic		= false;
 
 #pragma region Public functions
 void Canvas2D::init(std::shared_ptr<IRenderer> rendererPtr, mem::Arena* frameArena)
@@ -98,10 +99,12 @@ void Canvas2D::drawSprite(ecs::Sprite& sprite, ecs::Transform2D& transform)
 	if (sprite.texture.id != 0)
 		sprite.material.setTexture(M_TEX_MAIN, sprite.texture.id);
 
-	sprite.material.setProperty(M_PROP_USE_TEX, sprite.texture.id != 0);
+	sprite.material.setProperty(M_PROP_USE_TEX,	   sprite.texture.id != 0);
 	sprite.material.setProperty(M_PROP_MAIN_COLOR, color::SDLColorToVec4(sprite.color));
-	sprite.material.setProperty(M_PROP_MODEL, model);
-	sprite.material.setProperty(M_PROP_TIME, core::Profiler::instance().getElapsedTime());
+	sprite.material.setProperty(M_PROP_MODEL,	   model);
+	sprite.material.setProperty(M_PROP_TIME,	   core::Profiler::instance().getElapsedTime());
+
+	if (m_depth < BACKGROUND_Z) SDL_Log("HERE: %d, %f, %f", sprite.depth, sprite.size.x, sprite.size.y);
 
 	drawMeshWithMaterial(mesh, &sprite.material);
 }

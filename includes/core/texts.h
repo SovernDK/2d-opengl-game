@@ -2,6 +2,7 @@
 #include <fstream>
 #include <yaml-cpp/yaml.h>
 
+#include "globals/data_defs.h"
 #include "utility/file_util.h"
 #include "debug/logging.h"
 
@@ -58,6 +59,21 @@ namespace core
 			}
 
 			ErrorLog("Languages", "Text with key [%s] doesnt exist!", key.c_str());
+		}
+
+		std::string equipmentSlotName(EquipSlotId slotId)
+		{
+			switch (slotId)
+			{
+			case EquipSlotId::WEAPON:		return tryGet("equip.slot.hand",	"Hand");
+			case EquipSlotId::SIDE_WEAPON:	return tryGet("equip.slot.offhand", "Offhand");
+			case EquipSlotId::HEAD:			return tryGet("equip.slot.helmet",	"Helmet");
+			case EquipSlotId::BODY:			return tryGet("equip.slot.armor",	"Armor");
+			case EquipSlotId::FEET:			return tryGet("equip.slot.shoes",	"Shoes");
+			default:
+				ErrorLog("Languages", "Unknown equipment slot id: %d", static_cast<int>(slotId));
+				return "Unknown";
+			}
 		}
 
 		std::string error()

@@ -1,28 +1,50 @@
-items:
-  - spear_of_longinus:
-    type: weapon
+starting_inventory:
+  - philosopher_stone: 5
+  - arming_sword: 1
 
-  - philosopher_stone:
-    type: item
+starting_stats:
+  MaxHP   : 230
+  Strength: 33
+  Agility : 33
+  Spirit  : 33
+  Body    : 33
+
+starting_equipment:
+  weapon     : arming_sword
+  side_weapon: empty
+  head       : empty
+  body       : empty
+  feet       : sandals
+
+items:
+  - empty:
+      name: item.empty
+      type: none
+      description: none
+      value: 0
+
+  - arming_sword:
+      name: item.arming_sword
+      type: equipment
+      eq_slot: weapon
+      description: A basic sword for beginners.
+      effect:
+        - Strength: 1
+      value: 100
 
   - sandals:
-    type: armor
+      name: item.sandals
+      type: equipment
+      eq_slot: feet
+      description: Basic footwear for beginners.
+      effect:
+        - Body: 1
+      value: 100
 
-  - tunic:
-    type: armor
-
-  - divine_spark:
-    type: item
-    tags: consumable
-
-enemies:
-  - blind_cultist:
-    stats:
-      - MaxHP: 100
-      - Strength: 30
-      - Agility: 30
-      - Spirit: 44
-      - Body: 25
-  - loot_table:
-    - tunic: 1 
-    - philosopher_stone: 1
+  - philosopher_stone:
+      name: item.philosopher_stone
+      type: consumable
+      description: A mystical stone that grants wisdom and power.
+      effect:
+        - heal: 50
+      value: 500

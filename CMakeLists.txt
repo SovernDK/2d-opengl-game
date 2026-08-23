@@ -1,7 +1,4 @@
-﻿# CMakeList.txt : CMake project for Renderer, include source and define
-# project specific logic here.
-#
-cmake_minimum_required (VERSION 3.8)
+﻿cmake_minimum_required (VERSION 3.8)
 
 # Enable Hot Reload for MSVC compilers if supported.
 if (POLICY CMP0141)
@@ -12,18 +9,18 @@ endif()
 project ("Renderer")
 
 if(MSVC)
-    add_compile_options(/Zc:__cplusplus)
+	add_compile_options(/Zc:__cplusplus)
 endif()
 
 add_compile_definitions(PROJECT_ROOT_DIR="${CMAKE_SOURCE_DIR}/")
 
 # Add source to this project's executable.
 file(GLOB_RECURSE SRC_FILES
-    "${PROJECT_SOURCE_DIR}/src/*.cpp"
-    "${PROJECT_SOURCE_DIR}/src/*.h"
+	"${PROJECT_SOURCE_DIR}/src/*.cpp"
+	"${PROJECT_SOURCE_DIR}/src/*.h"
 	"${PROJECT_SOURCE_DIR}/lib/*.cpp"
-    "${PROJECT_SOURCE_DIR}/lib/*.h"
-    "${PROJECT_SOURCE_DIR}/shaders/*.glsl"
+	"${PROJECT_SOURCE_DIR}/lib/*.h"
+	"${PROJECT_SOURCE_DIR}/shaders/*.glsl"
 )
 
 add_executable(Renderer ${SRC_FILES})
@@ -47,39 +44,39 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
 endif()
 
 add_custom_command(TARGET Renderer POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/shaders
-    $<TARGET_FILE_DIR:Renderer>/shaders
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+	${CMAKE_SOURCE_DIR}/shaders
+	$<TARGET_FILE_DIR:Renderer>/shaders
 
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/assets
-    $<TARGET_FILE_DIR:Renderer>/assets
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+	${CMAKE_SOURCE_DIR}/assets
+	$<TARGET_FILE_DIR:Renderer>/assets
 
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/logs
-    $<TARGET_FILE_DIR:Renderer>/logs
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+	${CMAKE_SOURCE_DIR}/logs
+	$<TARGET_FILE_DIR:Renderer>/logs
 )
 
 target_include_directories(Renderer PRIVATE
-    ${PROJECT_SOURCE_DIR}   
-    ${PROJECT_SOURCE_DIR}/src     
-    ${PROJECT_SOURCE_DIR}/src/core
-    ${PROJECT_SOURCE_DIR}/src/core/fsm
-    ${PROJECT_SOURCE_DIR}/src/core/style
-    ${PROJECT_SOURCE_DIR}/src/generation
-    ${PROJECT_SOURCE_DIR}/src/gameplay
-    ${PROJECT_SOURCE_DIR}/src/graphics/rendering
-    ${PROJECT_SOURCE_DIR}/src/graphics/opengl
-    
-    ${PROJECT_SOURCE_DIR}/lib
-    ${PROJECT_SOURCE_DIR}/lib/glm
-    ${PROJECT_SOURCE_DIR}/lib/imgui
-    
-    ${PROJECT_SOURCE_DIR}/includes
-    ${PROJECT_SOURCE_DIR}/includes/core
-    ${PROJECT_SOURCE_DIR}/includes/gameplay
-    ${PROJECT_SOURCE_DIR}/includes/graphics/rendering
-    ${PROJECT_SOURCE_DIR}/includes/graphics/opengl
+	${PROJECT_SOURCE_DIR}   
+	${PROJECT_SOURCE_DIR}/src     
+	${PROJECT_SOURCE_DIR}/src/core
+	${PROJECT_SOURCE_DIR}/src/core/fsm
+	${PROJECT_SOURCE_DIR}/src/core/style
+	${PROJECT_SOURCE_DIR}/src/generation
+	${PROJECT_SOURCE_DIR}/src/gameplay
+	${PROJECT_SOURCE_DIR}/src/graphics/rendering
+	${PROJECT_SOURCE_DIR}/src/graphics/opengl
+	
+	${PROJECT_SOURCE_DIR}/lib
+	${PROJECT_SOURCE_DIR}/lib/glm
+	${PROJECT_SOURCE_DIR}/lib/imgui
+	
+	${PROJECT_SOURCE_DIR}/includes
+	${PROJECT_SOURCE_DIR}/includes/core
+	${PROJECT_SOURCE_DIR}/includes/gameplay
+	${PROJECT_SOURCE_DIR}/includes/graphics/rendering
+	${PROJECT_SOURCE_DIR}/includes/graphics/opengl
 )
 
 target_link_libraries(Renderer PRIVATE 
@@ -92,8 +89,8 @@ target_link_libraries(Renderer PRIVATE
 	imgui::imgui
 	glad::glad
 	Freetype::Freetype
-    yaml-cpp::yaml-cpp
+	yaml-cpp::yaml-cpp
 
-    nlohmann_json::nlohmann_json
-    magic_enum::magic_enum
+	nlohmann_json::nlohmann_json
+	magic_enum::magic_enum
 )

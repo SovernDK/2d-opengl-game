@@ -7,6 +7,7 @@
 #include "utility/utils.h"
 #include "utility/feel.h"
 #include "resources.h"
+#include "globals/gdata.h"
 
 namespace ecs
 {
@@ -22,16 +23,17 @@ namespace ecs
 
 		void init()
 		{
-			m_world.system<ParticleEmitter>([&](Entity& e, ParticleEmitter& emitter)
-			{
-				updateParticleEmitter(e, emitter);
-			});
-
+			m_world.system<ParticleEmitter>([&](Entity& e, ParticleEmitter& emitter){ updateParticleEmitter(e, emitter);} );
 			m_world.system<Particle, Transform2D, Sprite>(
-				[&](Entity& e, Particle& p, Transform2D& t, Sprite& s)
-			{
-				updateParticle(e, p, t, s);
-			});
+				[&](Entity& e, Particle& p, Transform2D& t, Sprite& s) { updateParticle(e, p, t, s); });
+
+			m_world.system<InvUseItemAction, Inventory>([&](Entity& e, InvUseItemAction& action, Inventory& inv) { consumeUseItemAction(e, action, inv); });
+			m_world.system<EquipAction, Equipment>([&](Entity& e, EquipAction& action, Equipment& eq) { consumeEquipAction(e, eq, action); });
+			m_world.system<UnequipAction, Equipment>([&](Entity& e, UnequipAction& action, Equipment& eq) { consumeUnequipAction(e, eq, action); });
+			m_world.system<AddItemAction, Inventory>([&](Entity& e, AddItemAction& action, Inventory& inv) { consumeAddItemAction(e, inv, action); });
+			m_world.system<SubtractItemAction, Inventory>([&](Entity& e, SubtractItemAction& action, Inventory& inv) { consumeSubtractItemAction(e, inv, action); });
+			m_world.system<InvEquipAction, Inventory, Equipment>(
+				[&](Entity& e, InvEquipAction& action, Inventory& inv, Equipment& eq) { consumeInvEquipAction(e, action, inv, eq); });
 		}
 
 		void updateParticleEmitter(Entity& entity, ParticleEmitter& emitter)
@@ -78,6 +80,7 @@ namespace ecs
 				emitter.interval.reset();
 			}
 		}
+		
 		void updateParticle(Entity& e, Particle& p, Transform2D& t, Sprite& s)
 		{
 			const float dt = core::Profiler::instance().getDeltaTime();
@@ -101,6 +104,68 @@ namespace ecs
 			{
 				m_world.destroy(e);
 			}
+		}
+		
+		void consumeUseItemAction(Entity& e, InvUseItemAction& action, Inventory& inv)
+		{
+			switch (action.type)
+			{
+			case ItemType::NONE:
+				break;
+			case ItemType::CONSUMABLE:
+				e.add<SubtractItemAction>({ action.invSlotId, 1 });
+				break;
+			case ItemType::EQUIPMENT:
+				{
+					auto eqSlot = core::GData.items[action.id].eqSlotId;
+					e.add<InvEquipAction>({ action.invSlotId, eqSlot });
+					break;
+				}
+			default:
+				ErrorLog("CoreSystems", "Unknown item type: %d", static_cast<int>(action.type));
+				break;
+			}
+			e.remove<InvUseItemAction>();
+		}
+
+		void consumeAddItemAction(Entity& e, Inventory& inv, AddItemAction& action)
+		{
+			inv.add(action.itemId, action.quantity);
+			e.remove<AddItemAction>();
+		}
+
+		void consumeSubtractItemAction(Entity& e, Inventory& inv, SubtractItemAction& action)
+		{
+			inv.subtract(action.invSlotId, action.quantity);
+			e.remove<SubtractItemAction>();
+		}
+
+		void consumeEquipAction(Entity& e, Equipment& eq, EquipAction& action)
+		{
+			eq.equip(action.slotId, action.itemId);
+			e.remove<EquipAction>();
+		}
+
+		void consumeInvEquipAction(Entity& e, InvEquipAction& action, Inventory& inv, Equipment& eq)
+		{
+			auto itemId = inv.items[action.inventoryId].itemId;
+
+			if (eq.slot(action.slotId).itemId != ITEMID_EMPTY)
+				inv.add(eq.slot(action.slotId).itemId, 1);
+
+			inv.subtract(action.inventoryId, 1);
+			eq.equip(action.slotId, itemId);
+
+			e.remove<InvEquipAction>();
+		}
+
+		void consumeUnequipAction(Entity& e, Equipment& eq, UnequipAction& action)
+		{
+			auto id = eq.slot(action.slotId).itemId;
+			e.add<AddItemAction>({ id, 1 });
+			eq.unequip(action.slotId);
+
+			e.remove<UnequipAction>();
 		}
 	};
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "gameplay/historia.h"
+
 #include <iostream>
 #include <yaml-cpp/yaml.h>
 #include <regex>
@@ -7,6 +8,7 @@
 
 #include "debug/logging.h"
 #include "core/texts.h"
+#include "core/globals/gdata.h"
 
 using namespace historia;
 
@@ -17,51 +19,15 @@ void Story::load(const std::string& path)
 	// Load config
 	const auto& config = root["config"];
 
-	// Load entities
-	for (const auto& entityNode : root[YAML_ENTITIES])
-	{
-		Entity e;
-		e.name = entityInterner.intern(entityNode[YAML_ENT_NAME].as<std::string>());
-
-		for (const auto& actionNode : entityNode[YAML_ENT_ACTIONS])
-		{
-			Action a;
-			a.label = entityInterner.intern(actionNode[YAML_ACTION_LABEL].as<std::string>());
-
-			Effect ef;
-			auto type = actionNode[YAML_ACTION_EFFECT][YAML_ACT_EFFECT_TYPE].as<std::string>();
-			auto efType = magic_enum::enum_cast<EEffectType>(type, magic_enum::case_insensitive);
-			if (efType.has_value())
-				ef.type = efType.value();
-			else
-			{
-				ErrorLog("Story", "Invalid Effect type (%s) in entity - %s", type.c_str(), entityInterner.toString(e.name).c_str());
-				continue;
-			}
-
-			for (const auto& param : actionNode[YAML_ACTION_EFFECT])
-			{
-				auto key = entityInterner.intern(param.first.as<std::string>());
-				auto value = entityInterner.intern(param.second.as<std::string>());
-				ef.params.insert(key, value);
-			}
-
-			a.effect = ef;
-			e.actions.push_back(a);
-		}
-
-		entities.push_back(e);
-	}
-
 	// Load rooms
 	std::set<StringInterner::Id> duplicates;
 	for (const auto& roomNode : root[YAML_ROOMS])
 	{
 		Room room;
 		room.title = roomInterner.intern(roomNode[YAML_ROOM_TITLE].as<std::string>());
-		room.content = roomNode[YAML_ROOM_CONTENT].as<std::string>();
+		room.header = roomNode[YAML_ROOM_HEADER].as<std::string>();
+		room.paragraph = parghInterner.intern(roomNode[YAML_ROOM_PAR].as<std::string>());
 
-		//Check if all contents have valid entities
 		if (!duplicates.insert(room.title).second)
 			FatalErrorLog("Story", "Found duplicate event title - %s!", roomInterner.toString(room.title).c_str());
 
@@ -85,23 +51,62 @@ void Story::load(const std::string& path)
 				d.gotoId = roomInterner.intern(value);
 			}
 
-			room.directions.push_back(d);
+			room.directions.insert(d.dir, d);
 			addEdge(room.title, d.gotoId);
+			_graph[room.title].push_back({ d.gotoId , d.dir });
+
 		}
 
 		rooms.insert(room.title, room);
 	}
 
-	currentRoomID = 1;
+	// Load Paragraphs
+	for (const auto& paragraphNode : root[YAML_PARAGRAPHS])
+	{
+		Paragraph paragraph;
+		paragraph.title = parghInterner.intern(paragraphNode[YAML_PAR_TITLE].as<std::string>());
+		paragraph.text = paragraphNode[YAML_PAR_TEXT].as<std::string>();
+
+		for (const auto& choiceNode : paragraphNode[YAML_PAR_CHOICES])
+		{
+			Choice c;
+			c.content = choiceNode[YAML_PAR_TEXT].as<std::string>();
+			c.gotoId = parghInterner.intern(choiceNode[YAML_PAR_GOTO].as<std::string>());
+
+			if (auto giveItemEff = choiceNode[YAML_PAR_GIVE_ITEM])
+			{
+				ChoiceEffect effect{ .type = EEffectType::GIVE_ITEM };
+				effect.params.insert(YAML_PAR_GIVE_ITEM, giveItemEff.as<std::string>());
+				c.effects.push_back(effect);
+			}
+
+			paragraph.choices.push_back(c);
+		}
+
+		paragraphs.insert(paragraph.title, paragraph);
+	}
+
+	currentRoomID = roomInterner.intern(root["config"]["start_room"].as<std::string>());
+	currParagraphId = parghInterner.intern(root["config"]["start_par"].as<std::string>());
 }
 
-void Story::goTo(const RoomID id)
+void Story::goTo(const ParagraphId id)
+{
+	if (paragraphs.find(id) == paragraphs.end())
+	{
+		FatalErrorLog("Story", "Invalid paragraph's id![%s]", parghInterner.toString(id).c_str());
+	}
+	currParagraphId = id;
+}
+
+void Story::move(const RoomID id)
 {
 	if (rooms.find(id) == rooms.end())
 	{
 		FatalErrorLog("Story", "Invalid room id![%s]", roomInterner.toString(id).c_str());
 	}
 	currentRoomID = id;
+	goTo(currentRoom().paragraph);
 }
 
 const Room& Story::currentRoom() const
@@ -109,14 +114,24 @@ const Room& Story::currentRoom() const
 	return rooms.at(currentRoomID);
 }
 
-const std::string Story::content(const RoomID id)
+const Paragraph& Story::currParagraph() const
 {
-	return parseRoomContent(rooms[id].content);
+	return paragraphs.at(currParagraphId);
+}
+
+const std::string Story::content(const ParagraphId id)
+{
+	return parseRoomContent(paragraphs[id].text);
 }
 
 const std::string Story::currentContent()
 {
-	return parseRoomContent(rooms[currentRoomID].content);
+	return content(currParagraphId);
+}
+
+const std::string Story::currentHeader() const
+{
+	return core::GTexts.get(currentRoom().header);
 }
 
 const std::string Story::parseRoomContent(const std::string& content)
@@ -127,7 +142,7 @@ const std::string Story::parseRoomContent(const std::string& content)
 	auto end = std::sregex_iterator();
 
 	auto last = content.cbegin();
-	for (auto it = begin; it != end; ++it)
+	for (auto& it = begin; it != end; ++it)
 	{
 		std::smatch match = *it;
 		std::string key = match[1].str();

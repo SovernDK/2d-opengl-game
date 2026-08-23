@@ -1,10 +1,50 @@
-main_menu.new_game: New Game
-main_menu.settings: Settings
-main_menu.load_game: Continue
-main_menu.exit_game: Exit
+main_menu.new_game  : New Game
+main_menu.settings  : Settings
+main_menu.load_game : Continue
+main_menu.exit_game : Exit
 
-player_name: Player
+player_name : Player
 
-entity.silver_sword: "Silver Sword"
-entity.torch: "Torch"
-entity.cult_priest: "Cult Priest"
+stats.title     : "STATS"
+stats.hp		: "Hit Points"
+stats.strength  : "Strength"
+stats.agility   : "Agility"
+stats.spirit    : "Spirit"
+stats.body      : "Body"
+
+equip.title         : "EQUIPMENT"
+equip.slot.hand     : "Weapon"
+equip.slot.offhand  : "Side-weapon"
+equip.slot.helmet   : "Head"
+equip.slot.body	    : "Body"
+equip.slot.shoes    : "Feet"
+
+inventory.title : "INVENTORY"
+
+item.empty  : "Empty"
+
+item.battle_axe     : "Dane-axe"
+item.arming_sword   : "Arming Sword"
+item.falchion       : "Falchion"
+item.silver_sword   : "Silver Sword"
+item.spear_longinus : "Spear of Longinus"
+
+item.sandals : "Sandals"
+
+item.torch              : "Torch"
+item.rope               : "Rope"
+item.philosopher_stone  : "Philosopher's Stone"
+item.incantation_bowl   : "Incantation Bowl" #Mandaeism
+
+entity.cult_priest      : "Cult Priest"
+
+paragraph.head.tomb_chamber : "Tomb Chamber"
+paragraph.head.tomb_antechamber : "Tomb Antechamber"
+
+paragraph.north : "North"
+paragraph.south : "South"
+paragraph.west  : "West"
+paragraph.east  : "East"
+
+paragraph.tomb_chamber.inspect_sarcophagus : "Inspect sarcophagus"
+paragraph.tomb_chamber.pickup_pieces : "Pickup the pieces"

@@ -1,146 +1,381 @@
 {
-    "root": {},
-
-    "def_window": {
-        "childrenOrigin": "center",
-        "verticalLayout": {
-            "expand": "both",
-            "fit": true,
-            "margin": {
-                "left": 6,
-                "top": 6,
-                "right": 6,
-                "bottom": 6
-            },
-            "spacing": 10
+    "headings": {
+        "h1": {
+            "font": "BLKCHCRY",
+            "size": 64
         },
 
-        "background": {
-            "color": "#F5B027",
-            "hoverColor": "#F5B027"
-        }
-    },
-
-    "def_button": {
-        "background": {
-            "color": "#FDC354",
-            "hoverColor": "#ffffff"
+        "h2": {
+            "font": "BLKCHCRY",
+            "size": 48
         },
 
-        "text": {
+        "h3": {
+            "font": "BLKCHCRY",
+            "size": 32
+        },
+
+        "normal": {
+            "font": "BLKCHCRY",
+            "size": 24
+        },
+
+        "numbers": {
             "font": "default",
-            "size": 64,
-            "color": "#ffffff",
-            "hoverColor": "#ff0000"
+            "size": 24
         },
 
-        "dropShadow": true,
-        "shadowOffset": {
-            "x": 2,
-            "y": 2
-        }
-    },
-
-    "def_image": {
-        "alpha": 0
-    },
-
-    "def_text": {
-        "text": {
+        "sub_header": {
             "font": "BLKCHCRY",
-            "size": 32,
-            "overflow": "shrink",
-            "color": "#000000",
-            "hoverColor": "#ff0000",
-            "align": "middle"
+            "size": 18
         }
     },
 
-    "mm_window": {
-        "childrenOrigin": "center",
-        "verticalLayout": {
-            "expand": "both",
-            "fit": true,
-            "margin": {
-                "left": 6,
-                "top": 6,
-                "right": 6,
-                "bottom": 6
+    "styles": {
+        "root": {},
+
+        "def_window": {
+            "verticalLayout": {
+                "expand": "both",
+                "fit": true,
+                "margin": {
+                    "left": 6,
+                    "top": 6,
+                    "right": 6,
+                    "bottom": 6
+                },
+                "spacing": 10
             },
-            "spacing": 10
+
+            "background": {
+                "keepAspectRatio": true,
+                "color": "#F5B027",
+                "hoverColor": "#F5B027"
+            }
         },
 
-        "background": {
-            "color": "#000000",
-            "hoverColor": "#000000"
-        }
-    },
+        "def_button": {
+            "text": {
+                "heading": "h1",
+                "overflow": "shrink",
+                "color": "#000000",
+                "hoverColor": "#ff0000",
+                "align": "left"
+            },
 
-    "mm_button": {
-        "background": {
-            "color": "#000000",
-            "hoverColor": "#ffffff"
+            "background": {
+                "color": "#FDC354",
+                "hoverColor": "#ffffff"
+            },
+
+            "dropShadow": true,
+            "shadowOffset": {
+                "x": 2,
+                "y": 2
+            }
         },
 
-        "text": {
-            "font": "BLKCHCRY",
-            "size": 48,
-            "color": "#000000",
-            "hoverColor": "#ffffff",
-            "align": "middle"
-        }
-    },
-
-    "book_window": {
-        "childrenOrigin": "center",
-        "horizontalLayout": {
-            "expand": "both",
-            "fit": true,
-            "margin": {
-                "left": 6,
-                "top": 0,
-                "right": 6,
-                "bottom": 0
-            },
-            "spacing": 46
-        }
-    },
-
-    "page_window": {
-        "childrenOrigin": "center",
-        "verticalLayout": {
-            "expand": "both",
-            "fit": true,
-            "margin": {
-                "left": 0,
-                "top": 0,
-                "right": 0,
-                "bottom": 0
-            },
-            "spacing": 16
-        }
-    },
-
-    "page_header": {
-        "background": {
-            "keepAspectRatio": true,
-            "color": "#ff0000",
-            "hoverColor": "#ff0000"
-        }
-    },
-
-    "choice_button": {
-        "background": {
-            "color": "#ffffff",
-            "hoverColor": "#ffffff"
+        "def_image": {
+            "alpha": 0
         },
 
-        "text": {
-            "font": "BLKCHCRY",
-            "size": 32,
-            "color": "#000000",
-            "hoverColor": "#ff0000",
-            "align": "middle"
+        "def_text": {
+            "text": {
+                "heading": "h3",
+                "overflow": "shrink",
+                "color": "#000000",
+                "hoverColor": "#ff0000",
+                "align": "left"
+            }
+        },
+
+
+        "mm_window": {
+            "verticalLayout": {
+                "expand": "both",
+                "fit": true,
+                "margin": {
+                    "left": 6,
+                    "top": 6,
+                    "right": 6,
+                    "bottom": 6
+                },
+                "spacing": 10
+            },
+
+            "background": {
+                "color": "#000000",
+                "hoverColor": "#000000"
+            }
+        },
+
+        "mm_button": {
+            "text": {
+                "heading": "h2",
+                "overflow": "shrink",
+                "color": "#000000",
+                "hoverColor": "#ff0000",
+                "align": "left"
+            },
+            "background": {
+                "color": "#000000",
+                "hoverColor": "#ffffff"
+            }
+        },
+
+
+        "page_right_win": {
+            "verticalLayout": {
+                "expand": "none",
+                "fit": false,
+                "margin": {
+                    "left": 24,
+                    "top": 24,
+                    "right": 24,
+                    "bottom": 24
+                },
+                "spacing": 0
+            }
+        },
+
+        "page_header": {
+            "text": {
+                "heading": "h2",
+                "overflow": "shrink",
+                "color": "#000000",
+                "hoverColor": "#ff0000",
+                "align": "middle",
+                "valign": "middle"
+            },
+
+            "background": {
+                "keepAspectRatio": true,
+                "color": "#ff0000",
+                "hoverColor": "#ff0000"
+            }
+        },
+
+        "page_content": {
+            "text": {
+                "heading": "normal",
+                "overflow": "shrink",
+                "color": "#000000",
+                "hoverColor": "#ff0000",
+                "align": "middle",
+                "valign": "middle"
+            }
+        },
+
+        "page_choice_btn": {
+            "text": {
+                "heading": "normal",
+                "overflow": "shrink",
+                "color": "#000000",
+                "hoverColor": "#ff0000",
+                "disabledColor": "#737373",
+                "align": "middle",
+                "valign": "middle"
+            },
+
+            "background": {
+                "color": "#ffffff",
+                "hoverColor": "#ffffff"
+            }
+        },
+
+        "rpage_actions": {
+            "horizontalLayout": {
+                "expand": "none",
+                "fit": false,
+                "margin": {
+                    "left": 6,
+                    "top": 6,
+                    "right": 6,
+                    "bottom": 6
+                },
+                "spacing": 6
+            }
+        },
+
+        "rpage_choices": {
+            "verticalLayout": {
+                "expand": "none",
+                "fit": false,
+                "margin": {
+                    "left": 6,
+                    "top": 6,
+                    "right": 6,
+                    "bottom": 6
+                },
+                "spacing": 6
+            }
+        },
+
+        "rpage_directions": {
+            "verticalLayout": {
+                "expand": "none",
+                "fit": false,
+                "margin": {
+                    "left": 0,
+                    "top": 0,
+                    "right": 0,
+                    "bottom": 0
+                },
+                "spacing": 0
+            }
+        },
+
+        "bookmark_win": {
+            "background": {
+                "keepAspectRatio": false,
+                "color": "#000000",
+                "hoverColor": "#000000"
+            },
+
+            "verticalLayout": {
+                "expand": "both",
+                "fit": true,
+                "margin": {
+                    "left": 0,
+                    "top": 0,
+                    "right": 0,
+                    "bottom": 0
+                },
+                "spacing": 6
+            }
+        },
+
+        "bookmark_btn": {
+            "text": {
+                "heading": "h3",
+                "overflow": "shrink",
+                "color": "#000000",
+                "hoverColor": "#ffffff",
+                "align": "middle",
+                "valign": "middle"
+            },
+
+            "background": {
+                "color": "#ffffff",
+                "hoverColor": "#ff0000"
+            }
+        },
+
+        "page_left_win": {
+            "horizontalLayout": {
+                "expand": "both",
+                "fit": true,
+                "margin": {
+                    "left": 46,
+                    "top": 24,
+                    "right": 12,
+                    "bottom": 24
+                },
+                "spacing": 24
+            }
+        },
+
+        "lpage_column": {
+            "verticalLayout": {
+                "expand": "horiz",
+                "fit": false,
+                "margin": {
+                    "left": 0,
+                    "top": 0,
+                    "right": 0,
+                    "bottom": 0
+                },
+                "spacing": 0
+            }
+        },
+
+        "lpage_attributes": {
+            "verticalLayout": {
+                "expand": "horiz",
+                "fit": false,
+                "margin": {
+                    "left": 0,
+                    "top": 0,
+                    "right": 0,
+                    "bottom": 0
+                },
+                "spacing": 0
+            }
+        },
+
+        "lpage_inventory": {
+            "verticalLayout": {
+                "expand": "horiz",
+                "fit": false,
+                "margin": {
+                    "left": 0,
+                    "top": 0,
+                    "right": 0,
+                    "bottom": 0
+                },
+                "spacing": 16
+            }
+        },
+
+        "lpage_equipment": {
+            "verticalLayout": {
+                "expand": "both",
+                "fit": true,
+                "margin": {
+                    "left": 0,
+                    "top": 0,
+                    "right": 0,
+                    "bottom": 0
+                },
+                "spacing": 16
+            }
+        },
+
+
+        "value_label_window": {
+            "text": {
+                "heading": "normal",
+                "overflow": "shrink",
+                "color": "#000000",
+                "hoverColor": "#ff0000",
+                "align": "left",
+                "valign": "middle"
+            },
+
+            "horizontalLayout": {
+                "childrenOrigin": "center",
+                "expand": "both",
+                "fit": true,
+                "margin": {
+                    "left": 0,
+                    "top": 0,
+                    "right": 0,
+                    "bottom": 0
+                },
+                "spacing": 8
+            }
+        },
+
+        "value_label": {
+            "text": {
+                "heading": "normal",
+                "overflow": "shrink",
+                "color": "#000000",
+                "hoverColor": "#ff0000",
+                "align": "right",
+                "valign": "middle"
+            }
+        },
+
+        "value_label_numbers": {
+            "text": {
+                "heading": "numbers",
+                "overflow": "shrink",
+                "color": "#000000",
+                "hoverColor": "#ff0000",
+                "align": "right",
+                "valign": "middle"
+            }
         }
     }
 }

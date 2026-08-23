@@ -8,6 +8,7 @@ class IUIService;
 
 namespace rmui
 {
+	// Rework this to be includable in ui_widget.h
 	template<typename TDerived>
 	class IWidgetFactory
 	{
@@ -59,7 +60,7 @@ namespace rmui
 
 		std::shared_ptr<UIWidget> build(const std::string& handle);
 
-		UILabelFactory& setText(std::string& text) { m_text = text; return *this; };
+		UILabelFactory& setText(const std::string& text) { m_text = text; return *this; };
 
 		UILabelFactory& setAlign(TextAlign align) { m_align = align; return *this; };
 		UILabelFactory& setValign(TextVertAlign valign) { m_valign = valign; return *this; };
@@ -104,13 +105,14 @@ namespace rmui
 		std::function<void(UIWidget*)>            onEnterHover;
 		std::function<void(UIWidget*)>            onExitHover;
 
-		TexID m_image = 0;
+		TexID m_image          = 0;
 		bool m_keepAspectRatio = false;
+		/*TextAlign m_align      = TextAlign::Left;
+		TextVertAlign m_valign = TextVertAlign::Top;*/
+		
 		std::string m_text;
-		TextAlign m_align = TextAlign::Left;
-		TextVertAlign m_valign = TextVertAlign::Top;
 	public:
-		UIButtonFactory(IUIService& service) : IWidgetFactory(service) { m_style = "defButton"; }
+		UIButtonFactory(IUIService& service) : IWidgetFactory(service) { m_style = "def_button"; }
 
 		UIButtonFactory& addOnClick(const std::function<void(UIWidget*)>& cb) { onClick = cb; return *this; }
 		UIButtonFactory& addOnPressed(const std::function<void(UIWidget*, glm::vec2)>& cb) { onPressed = cb; return *this; }
@@ -120,8 +122,8 @@ namespace rmui
 		UIButtonFactory& setImage(TexID imageId) { m_image = imageId; return *this; };
 		UIButtonFactory& setText(const std::string& text) { m_text = text; return *this; };
 
-		UIButtonFactory& setAlign(TextAlign align) { m_align = align; return *this; };
-		UIButtonFactory& setValign(TextVertAlign valign) { m_valign = valign; return *this; };
+		/*UIButtonFactory& setAlign(TextAlign align) { m_align = align; return *this; };
+		UIButtonFactory& setValign(TextVertAlign valign) { m_valign = valign; return *this; };*/
 
 		UIButtonFactory& setKeepAspect(bool keepAspectRatio) { m_keepAspectRatio = keepAspectRatio; return *this; };
 
@@ -140,5 +142,39 @@ namespace rmui
 		UIImageFactory& setKeepAspect(bool keepAspectRatio) { m_keepAspectRatio = keepAspectRatio; return *this; };
 
 		std::shared_ptr<UIWidget> build(const std::string& handle);
+	};
+
+	class UIValueLabelFactory : public IWidgetFactory<UIValueLabelFactory>
+	{
+	private:
+		std::function<void(UIWidget*)> onClick;
+
+		TexID m_image = 0;
+		bool m_keepAspectRatio = false;
+
+		std::string m_text, m_value;
+		std::string m_valueStyle;
+		/*TextAlign m_align = TextAlign::Left;
+		TextVertAlign m_valign = TextVertAlign::Top;*/
+	public:
+		UIValueLabelFactory(IUIService& service) : IWidgetFactory(service) 
+		{ 
+			m_style = m_valueStyle = "value_label_window";
+		};
+
+		UIValueLabelFactory& addOnClick(const std::function<void(UIWidget*)>& cb) { onClick = cb; return *this; }
+
+		UIValueLabelFactory& setImage(TexID imageId) { m_image = imageId; return *this; };
+		UIValueLabelFactory& setKeepAspect(bool keepAspectRatio) { m_keepAspectRatio = keepAspectRatio; return *this; };
+
+		UIValueLabelFactory& setText(const std::string& text) { m_text = text; return *this; };
+		UIValueLabelFactory& setValue(const std::string& text) { m_value = text; return *this; };
+
+		/*UIValueLabelFactory& setAlign(TextAlign align) { m_align = align; return *this; };
+		UIValueLabelFactory& setValign(TextVertAlign valign) { m_valign = valign; return *this; };*/
+
+		UIValueLabelFactory& setValueTextStyle(const std::string& style) { m_valueStyle = style; return *this; };
+
+		std::shared_ptr<UIValueLabel> build(const std::string& handle);
 	};
 }

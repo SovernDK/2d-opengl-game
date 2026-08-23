@@ -21,9 +21,9 @@ class IRenderer;
 class Mesh;
 class MaterialInstance;
 
-constexpr Depth UI_Z = 100;
+constexpr Depth UI_Z         = 100;
 constexpr Depth BACKGROUND_Z = 10;
-constexpr Depth SPRITE_Z = 20;
+constexpr Depth SPRITE_Z     = 20;
 
 class Canvas2D
 {
@@ -36,6 +36,7 @@ private:
 	static SDL_Color m_color;
 	static Depth m_depth;
 	static BlendMode m_blendMode;
+	static bool m_isDynamic;
 public:
 	static void init(std::shared_ptr<IRenderer> rendererPtr, mem::Arena* frameArena);
 
@@ -55,21 +56,23 @@ public:
 	static glm::vec2 textSize(const std::string_view text, const std::string_view fontName, int fontSize);
 	static glm::vec2 textOrigin(const std::string_view text, const std::string_view fontName, int fontSize);
 
-	static void setClipping(glm::vec4 clip) { m_clip = clip; };
-	static void setIsClipping(bool clip) { isClipping = clip; };
-	static void setColor(SDL_Color color) { m_color = color; };
-	static void setDepth(Depth depth) { m_depth = depth; };
-	static void setBlend(BlendMode blendMode) { m_blendMode = blendMode; };
+	static void setClipping(glm::vec4 clip)		{ m_clip = clip; };
+	static void setIsClipping(bool clip)		{ isClipping = clip; };
+	static void setColor(SDL_Color color)		{ m_color = color; };
+	static void setDepth(Depth depth)			{ m_depth = depth; };
+	static void setBlend(BlendMode blendMode)	{ m_blendMode = blendMode; };
+	static void setIsDynamic(bool isDynamic)	{ m_isDynamic = isDynamic; };
 
 	static void setInternalResolution(int width, int height);
 
 	static void reset()
 	{
-		m_clip = glm::vec4(0.0f);
-		isClipping = false;
-		m_color = WHITE;
-		m_depth = 1;
+		m_clip      = glm::vec4(0.0f);
+		isClipping  = false;
+		m_color     = WHITE;
+		m_depth     = 1;
 		m_blendMode = BlendMode::None;
+		m_isDynamic = false;
 	}
 
 	template<typename T, typename... Args>

@@ -18,8 +18,6 @@ void main()
     {
         texColor = texture(image, TexCoords);
     }
-    else 
-        texColor = mainColor;
 
-    FragColor = texColor;
+    FragColor = texColor * mainColor;
 }
