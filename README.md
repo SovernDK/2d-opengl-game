@@ -5,7 +5,7 @@
 
 <img src="./git-screenshots/book.png" width="600">
 
-> A fully text-based game, with all actions taking place through this stylized interface.
+> A fully text-based game, with all actions taking place through this stylized interface. (WIP)
 
 <img src="./git-screenshots/editor.png" width="600">
 
@@ -13,7 +13,7 @@
 
 <img src="./git-screenshots/world_map.png" width="600">
 
-> Perlin noise heightmap rendered via a custom terrain shader, with adjustable lighting and time-of-day settings.
+> Perlin noise heightmap rendered via a custom terrain shader, with adjustable lighting and time-of-day settings. Animated water and forests were achieved through the use of normal maps.
 
 <img src="./git-screenshots/main_menu.png" width="600">
 
@@ -44,13 +44,13 @@ git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
 C:\vcpkg\bootstrap-vcpkg.bat
 ```
 
-You can install it anywhere — `C:\vcpkg` is just an example. If you already have vcpkg installed somewhere, skip this step and just note the path.
+You can install it anywhere â€” `C:\vcpkg` is just an example. If you already have vcpkg installed somewhere, skip this step and just note the path.
 
 ### 3. Point the project at your vcpkg installation
 
 Choose **one** of the following options.
 
-**Option 1 — Environment variable**
+**Option 1 â€” Environment variable**
 
 Set `MY_VCPKG_ROOT` to your vcpkg installation path:
 
@@ -66,7 +66,7 @@ cmake --preset x64-debug
 
 > Note: if you use Visual Studio Developer shells, VS sets its own `VCPKG_ROOT` variable automatically, which can conflict with a manually-set `VCPKG_ROOT`. Using the name `MY_VCPKG_ROOT` avoids this, but if you still run into issues, use Option 2 instead.
 
-**Option 2 — Local override (no env var)**
+**Option 2 â€” Local override (no env var)**
 
 Create a file named `CMakeUserPresets.json` in the project root (this file is gitignored and personal to your machine):
 
@@ -107,7 +107,7 @@ cmake --build --preset x64-debug        # if using Option 1
 cmake --build --preset x64-debug-local  # if using Option 2
 ```
 
-This automatically downloads and builds all dependencies (SDL3, etc.) as listed in `vcpkg.json` — no manual `vcpkg install` step needed. First-time configure may take a few minutes while dependencies compile.
+This automatically downloads and builds all dependencies (SDL3, etc.) as listed in `vcpkg.json` â€” no manual `vcpkg install` step needed. First-time configure may take a few minutes while dependencies compile.
 
 The compiled binary will be in `out/build/x64-debug/` or `out/build/x64-debug-local/` depending on which option you used.
 
