@@ -3,23 +3,19 @@
 
 ## Screenshots
 
-### ?? Text Adventure
-<img src="./git-screenshots/book.png" width="450">
+<img src="./git-screenshots/book.png" width="600">
 
 > A fully text-based game, with all actions taking place through this stylized interface.
 
-### ??? Editor
-<img src="./git-screenshots/editor.png" width="450">
+<img src="./git-screenshots/editor.png" width="600">
 
 > Custom editor built with ImGui, featuring ECS entity listings and a UI tree view.
 
-### ?? World Map
-<img src="./git-screenshots/world_map_.png" width="450">
+<img src="./git-screenshots/world_map.png" width="600">
 
 > Perlin noise heightmap rendered via a custom terrain shader, with adjustable lighting and time-of-day settings.
 
-### ?? Main Menu
-<img src="./git-screenshots/main_menu_.png" width="450">
+<img src="./git-screenshots/main_menu.png" width="600">
 
 > Animated background powered by a custom shader (`grad_frag.glsl`), with particle effects and interactive, animated buttons.
 
