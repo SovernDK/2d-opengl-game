@@ -119,6 +119,7 @@ void MainMenuScene::start()
 				ServiceLocator::get<ISceneService>()->requestTransition<GameScene>(TransitionMode::Additive);
 				ServiceLocator::get<ISceneService>()->requestTransition<NarrativeEventScene>(TransitionMode::Additive);
 				ServiceLocator::get<ISceneService>()->requestTransition<CharacterSheetScene>(TransitionMode::Additive);
+				//ServiceLocator::get<ISceneService>()->requestTransition<WorldMapScene>(TransitionMode::Additive);
 			});
 
 		loadGameBtn->label->play<FadeOut>(.6f)->setCurve<feel::QuadCurve>(feel::EasingType::In)

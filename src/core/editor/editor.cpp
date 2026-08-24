@@ -123,7 +123,7 @@ void Editor::update(float dt, const ICamera& camera)
 	ImGui::End();
 #pragma endregion Bottom Bar
 
-	showEditableTableWindow(&p_open);
+	//showEditableTableWindow(&p_open);
 
 #pragma region Center
 

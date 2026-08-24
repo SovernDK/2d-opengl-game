@@ -1,7 +1,29 @@
 # 2d opengl game
 2D game engine build with sdl3 and opengl.
 
-# Building 
+## Screenshots
+
+### ?? Text Adventure
+<img src="./git-screenshots/book.png" width="450">
+
+> A fully text-based game, with all actions taking place through this stylized interface.
+
+### ??? Editor
+<img src="./git-screenshots/editor.png" width="450">
+
+> Custom editor built with ImGui, featuring ECS entity listings and a UI tree view.
+
+### ?? World Map
+<img src="./git-screenshots/world_map_.png" width="450">
+
+> Perlin noise heightmap rendered via a custom terrain shader, with adjustable lighting and time-of-day settings.
+
+### ?? Main Menu
+<img src="./git-screenshots/main_menu_.png" width="450">
+
+> Animated background powered by a custom shader (`grad_frag.glsl`), with particle effects and interactive, animated buttons.
+
+# How to build
 ## Prerequisites
 
 - [CMake](https://cmake.org/download/) 3.21 or newer

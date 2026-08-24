@@ -115,7 +115,7 @@ void initializeWorld(core::Game& game)
 	Texture2D* tex = Resources::texture("triangle");
 	temp.setTexture(M_TEX_MAIN, tex->ID());
 
-	game.ecsWorld()->create()
+	/*game.ecsWorld()->create()
 		.add<ecs::Sprite>(ecs::Sprite{
 				.size = glm::vec2(24),
 				.material = temp
@@ -131,7 +131,7 @@ void initializeWorld(core::Game& game)
 			})
 		.add<ecs::Transform2D>(ecs::Transform2D{
 				.position = glm::vec3(450, 400, 1.0)
-			});
+			});*/
 }
 
 // Async

@@ -25,7 +25,7 @@ const float AMPLITUDE = 0.1;
 const float FREQUENCY = 25;
 const float SPEED = 0.1;
 
-const float EDGE_BLUR = 0.05;
+const float EDGE_BLUR = 0.075;
 
 //Dither
 const highp float NOISE_GRANULARITY = 0.5 / 255.0;
@@ -52,9 +52,10 @@ void main()
 
     float curve_y = MID_Y + stackedSin();
     float dist = curve_y - y;
-    float alpha = smoothstep(-EDGE_BLUR, EDGE_BLUR, dist);
+    float alpha = smoothstep(-EDGE_BLUR * x, EDGE_BLUR * x, dist);
 
     color = mix(lower_color, upper_color, alpha);
+    // Prevent color banding
     color += mix(-NOISE_GRANULARITY, NOISE_GRANULARITY, random(TexCoords));
 
     FragColor = vec4(color, 1.0);

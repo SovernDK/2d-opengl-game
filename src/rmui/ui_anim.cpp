@@ -159,6 +159,7 @@ void MoveFrom::end(UIWidget* widget)
 void MoveTo::start(UIWidget* widget)
 {
 	IAnimation::start(widget);
+	widget->clipping = false;
 }
 
 void MoveTo::update(UIWidget* widget, float dt)
